@@ -66,6 +66,6 @@ async function editUserInDB(user) {
 }
 
 
-// Login still missing, Verification email missing, password reset missing, delete user missing
+// Login still missing, Verification email missing, password reset missing, delete user missing - integrate with front-end during meeting tmrw
 
 export { SetupUserInDB, editUserInDB };
