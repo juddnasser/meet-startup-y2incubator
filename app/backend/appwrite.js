@@ -1,0 +1,14 @@
+import { Client, Account, Databases } from 'appwrite';
+
+const apiKey = process.env.local.DB_APIKEY;
+
+const projectId = process.env.local.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+
+const client = new Client()
+    .setProject(projectId)
+    .setEndpoint('https://fra.cloud.appwrite.io/v1');
+
+const account = new Account(client);
+const tablesDB = new TablesDB(client);
+
+export { account, tablesDB };
