@@ -1,4 +1,4 @@
-import { Client, Account, Databases } from 'appwrite';
+import { Client, Account, Databases, TablesDB } from 'appwrite';
 
 const apiKey = process.env.local.DB_APIKEY;
 
@@ -11,4 +11,4 @@ const client = new Client()
 const account = new Account(client);
 const tablesDB = new TablesDB(client);
 
-export { account, tablesDB };
+export { account, client, tablesDB };

@@ -1,4 +1,4 @@
-import { account, tablesDB } from './appwrite.js';
+import { account, client, tablesDB } from './appwrite.js';
 
 const apiKey = process.env.local.DB_APIKEY;
 const projectId = process.env.local.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
@@ -25,7 +25,7 @@ async function SetupUserInDB(user) {
         rowId: ID.unique(),
         data: {
             age: user.age ?? null,
-            jobdesc: user.jobdesc ?? "",
+            description: user.description ?? "",
             role: user.role ?? "",
             name: user.name ?? "",
             pfp: user.pfp ?? 0
@@ -40,6 +40,35 @@ async function SetupUserInDB(user) {
     });
     return true;
 }
+
+async function enterSession(user) {
+
+    const account = new Account(client);
+
+    const result = await account.createEmailPasswordSession({
+        email: user.email,
+        password: user.password
+    });
+
+    console.log(result);
+
+}
+
+async function verifyEmail(userID) {
+
+    const promise = account.createEmailVerification({
+        url: '' //TODO: add url to redirect to after verification
+    });
+
+    promise.then(function (response) {
+        console.log(response); // Success
+        return true;
+    }, function (error) {
+        console.log(error); // Failure
+        return false;
+    });
+}
+
 
 async function editUserInDB(user) {
 
@@ -66,6 +95,30 @@ async function editUserInDB(user) {
 }
 
 
-// Login still missing, Verification email missing, password reset missing, delete user missing - integrate with front-end during meeting tmrw
+// Login still missing, Verification email missing, password reset missing - integrate with front-end during meeting tmrw
+
+async function resetPassword(userID, newPassword) {
+
+}
+
+async function deleteUserFromDB(userID) {
+
+    const promise = tablesDB.deleteRow({
+        databaseId: 'main',
+        tableId: 'user',
+        rowId: userID
+    });
+    promise.then(function (response) {
+        console.log(response);
+    }, function (error) {
+        console.log(error);
+        return false;
+    });
+    return true;
+}
 
 export { SetupUserInDB, editUserInDB };
+
+// Match users using age and gender & job description and role
+
+// P2P Chats and Group P2P CHATS
