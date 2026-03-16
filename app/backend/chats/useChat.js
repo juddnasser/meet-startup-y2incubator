@@ -16,7 +16,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   patchMessage,
   readMessages,
-  editMessage   as storageEditMessage,
+  editMessage as storageEditMessage,
   deleteMessage as storageDeleteMessage,
   getArchiveBatchCount,
   readArchiveBatch,
@@ -35,9 +35,9 @@ import {
  *   p2pTransport.onMessage(peerId, handler)  → unsubscribe()
  */
 export function useChat(peerId, myId, p2pTransport) {
-  const [messages,          setMessages]         = useState([]);
-  const [loading,           setLoading]          = useState(true);
-  const [hasOlderMessages,  setHasOlderMessages] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
   const archivePageRef = useRef(null); // tracks which archive batch to load next
 
   // ── Initial load ───────────────────────────────────────────────────────────
@@ -75,8 +75,8 @@ export function useChat(peerId, myId, p2pTransport) {
 
     const unsubscribe = p2pTransport.onMessage(peerId, async (appwriteRow) => {
       // appwriteRow is the raw Appwrite shape: { sender_id, sent_id, content, $createdAt }
-      const current  = await readMessages(peerId);
-      const newRows   = deduplicateRows([appwriteRow], current);
+      const current = await readMessages(peerId);
+      const newRows = deduplicateRows([appwriteRow], current);
       if (newRows.length === 0) return; // already stored
 
       const message = await loadInboundMessage(appwriteRow, myId);
@@ -93,12 +93,12 @@ export function useChat(peerId, myId, p2pTransport) {
   // ── CRUD: send a new outbound message ─────────────────────────────────────
   const sendMessage = useCallback(async (content) => {
     const message = {
-      id:        crypto.randomUUID(),
-      senderId:  myId,
+      id: crypto.randomUUID(),
+      senderId: myId,
       content,
-      dateSent:  Date.now(),
+      dateSent: Date.now(),
       direction: 'sent',
-      edited:    false,
+      edited: false,
     };
 
     // Persist before sending — crash-safe
@@ -159,8 +159,8 @@ export function useChat(peerId, myId, p2pTransport) {
 
   // ── Bulk sync: load a batch from Appwrite (e.g. on first connection) ──────
   const syncFromAppwrite = useCallback(async (appwriteRows) => {
-    const current  = await readMessages(peerId);
-    const newRows   = deduplicateRows(appwriteRows, current);
+    const current = await readMessages(peerId);
+    const newRows = deduplicateRows(appwriteRows, current);
     if (newRows.length === 0) return;
 
     const processed = await loadMessageBatch(newRows, myId, peerId);

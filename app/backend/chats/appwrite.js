@@ -29,12 +29,12 @@ import { patchMessage } from './primary.js';
  */
 export function processAppwriteRow(row, myId) {
   return {
-    id:        row.sent_id,
-    senderId:  row.sender_id,
-    content:   row.content,
-    dateSent:  new Date(row.$createdAt).getTime(), // ISO → Unix ms
+    id: row.sent_id,
+    senderId: row.sender_id,
+    content: row.content,
+    dateSent: new Date(row.$createdAt).getTime(), // ISO → Unix ms
     direction: row.sender_id === myId ? 'sent' : 'received',
-    edited:    false,
+    edited: false,
   };
 }
 

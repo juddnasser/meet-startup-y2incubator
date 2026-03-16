@@ -12,7 +12,7 @@ import { ARCHIVE_BATCH_SIZE } from './types.js';
 
 // ─── Internal key helpers ────────────────────────────────────────────────────
 
-const metaKey  = (peerId) => `archive:${peerId}:meta`;
+const metaKey = (peerId) => `archive:${peerId}:meta`;
 const batchKey = (peerId, index) => `archive:${peerId}:batch:${index}`;
 
 // ─── Internal: read archive metadata ────────────────────────────────────────
@@ -61,7 +61,7 @@ export async function archiveMessage(peerId, message) {
 
   // The "open" (current) batch index is always the last one
   const openBatchIndex = meta.totalBatches === 0 ? 0 : meta.totalBatches - 1;
-  const openBatch      = await getArchiveBatch(peerId, openBatchIndex);
+  const openBatch = await getArchiveBatch(peerId, openBatchIndex);
 
   openBatch.push(message);
 
@@ -134,13 +134,13 @@ export async function editArchivedMessage(peerId, messageId, newContent) {
   // Scan batches newest → oldest
   for (let i = meta.totalBatches - 1; i >= 0; i--) {
     const batch = await getArchiveBatch(peerId, i);
-    const idx   = batch.findIndex((m) => m.id === messageId);
+    const idx = batch.findIndex((m) => m.id === messageId);
 
     if (idx !== -1) {
       batch[idx] = {
         ...batch[idx],
-        content:  newContent,
-        edited:   true,
+        content: newContent,
+        edited: true,
         editedAt: Date.now(),
       };
       await saveArchiveBatch(peerId, i, batch);

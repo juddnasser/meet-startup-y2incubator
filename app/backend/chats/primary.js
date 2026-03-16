@@ -13,8 +13,8 @@
  */
 
 import { primaryStorage } from './instances.js';
-import { archiveMessage }  from './archive.js';
-import { PRIMARY_MAX }     from './types.js';
+import { archiveMessage } from './archive.js';
+import { PRIMARY_MAX } from './types.js';
 
 // ─── Internal key helper ─────────────────────────────────────────────────────
 
@@ -105,8 +105,8 @@ export async function editMessage(peerId, messageId, newContent) {
   if (idx !== -1) {
     conversation.messages[idx] = {
       ...conversation.messages[idx],
-      content:  newContent,
-      edited:   true,
+      content: newContent,
+      edited: true,
       editedAt: Date.now(),
     };
     await saveConversation(peerId, conversation);
