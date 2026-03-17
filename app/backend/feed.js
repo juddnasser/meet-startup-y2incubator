@@ -42,3 +42,56 @@ async function deletePost(postID, userID) {
     });
     return true;
 }
+
+async function getCompatability(user1, user2) {
+    const user1Data = tablesDB.getRow({
+        databaseId: 'main',
+        tableId: 'users',
+        rowId: user1
+    });
+    const user2Data = tablesDB.getRow({
+        databaseId: 'main',
+        tableId: 'users',
+        rowId: user2
+    });
+
+    return Promise.all([user1Data, user2Data])
+        .then(function (responses) {
+            const user1Interests = responses[0].rows[0].data.supportTypes;
+            const user2Interests = responses[1].rows[0].data.supportTypes;
+
+            const shared = user2Interests.filter(interest =>
+                user1Interests.includes(interest)
+            );
+
+            return shared.length / user1Interests.length;
+        })
+        .catch(function (error) {
+            console.log(error);
+            return 0;
+        });
+}
+
+async function getMostCompatableUsers(userId) {
+    const allUsersData = tablesDB.listRows({
+        databaseId: 'main',
+        tableId: 'users',
+        queries: [
+            tablesDB.queryEqual('*', '$id')
+        ]
+    });
+
+
+    let compatabilities = {};
+
+
+
+    let parsedData = allUsersData.then(function (users) {
+        users.forEach(user => {
+            compatabilities[user.$id] = getCompatability(userId, user.rows[0].data.$id);
+        });
+    });
+
+}
+
+export { createPost, deletePost, getCompatability, getMostCompatableUsers };
