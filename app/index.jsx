@@ -10,26 +10,23 @@ function homePge() {
   let stylesMain = [stylesMainDark, stylesMainLight];
   let imgSRC = ["https://static.vecteezy.com/system/resources/thumbnails/007/278/150/small_2x/dark-background-abstract-with-light-effect-vector.jpg", "https://images.ctfassets.net/nnkxuzam4k38/5uWJWkeNbfKj1xCb0QYw4W/5f98c1cf50300f106e1027609733e4cb/white-triangle.jpg"]
   const TEAM_MEMBERS = [{
-    name: "Person1",
-    description: "Lorem Ipsum"
+    name: "Shalva",
+    description: "PM"
   }, {
-    name: "Person1",
-    description: "Lorem Ipsum"
+    name: "Maya",
+    description: "UX"
   }, {
-    name: "Person1",
-    description: "Lorem Ipsum"
+    name: "Noor",
+    description: "UI"
   }, {
-    name: "Person1",
-    description: "Lorem Ipsum"
+    name: "Joud",
+    description: "Backend Developer"
   }, {
-    name: "Person1",
-    description: "Lorem Ipsum"
-  }, {
-    name: "Person1",
-    description: "Lorem Ipsum"
-  },]
+    name: "Nadav",
+    description: "Frontend Developer"
+  }]
   const TEAM_ROWS = [
-    TEAM_MEMBERS.slice(0, 3), // First row
+    TEAM_MEMBERS.slice(0,3), // First row
     TEAM_MEMBERS.slice(3)     // Second row
   ];
 
@@ -46,7 +43,7 @@ function homePge() {
 
         {/* Main text and buttons */}
         <View style={stylesMain[mode].mainTextBlock}>
-          <Text style={stylesMain[mode].mainText}>PLACEHOLDER</Text>
+          <Text style={stylesMain[mode].mainText}>Hidush</Text>
           <View style={stylesMain[mode].secondaryTextBlock}>
             <Pressable
               style={({ pressed }) => [
@@ -74,7 +71,8 @@ function homePge() {
         {/* About */}
         <Text style={stylesMain[mode].sectionTitle}>About Us</Text>
         <Text style={stylesMain[mode].sectionText}>
-          {'\t'}Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+          {'\t'}'We are Hidush - Our app provides Haredim with the tools, support, and confidence to pursue new paths-whether in education, careers, or broader participation in society.
+Through personalized guidance, accessible information, and a supportive community, we help turn ambition into reality and build bridges between worlds.'
         </Text>
         <Text style={[stylesMain[mode].sectionTitle, { alignSelf: "center" }]}>---</Text>
         {/* Team Section */}
@@ -99,58 +97,114 @@ function homePge() {
 
 const stylesMainDark = StyleSheet.create({
   background: { flex: 1, width: '100%', height: '100%' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.45)' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(35, 31, 32, 0.45)' },
 
   mainTextBlock: { justifyContent: 'center', alignItems: 'flex-start', marginLeft: 200, paddingVertical: 350 },
-  mainText: { fontSize: 120, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'left', marginBottom: 40, letterSpacing: 1 },
+  mainText: { fontSize: 120, fontWeight: 'bold', color: '#F4FAFF', textAlign: 'left', marginBottom: 40, letterSpacing: 1 },
   secondaryTextBlock: { flexDirection: 'row' },
 
-  menuItem: { borderWidth: 1, borderColor: '#3B82F6', borderRadius: 12, paddingHorizontal: 28, paddingVertical: 16, marginRight: 24, backgroundColor: 'rgba(0,0,0,0.4)' },
-  menuItemPressed: { backgroundColor: 'rgba(59,130,246,0.25)' },
-  menuText: { color: '#FFFFFF', fontSize: 24, fontWeight: '500' },
+  menuItem: {
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    marginRight: 24,
+    backgroundColor: 'rgba(32, 44, 89, 0.55)',
+  },
+  menuItemPressed: { backgroundColor: 'rgba(252, 158, 79, 0.22)' },
+  menuText: { color: '#F4FAFF', fontSize: 24, fontWeight: '500' },
 
-  textSection: { paddingTop: 200, paddingHorizontal: 200, paddingBottom: 100, backgroundColor: '#050B14' },
-  sectionTitle: { fontSize: 100, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'left', marginBottom: 40 },
-  sectionText: { fontSize: 24, lineHeight: 36, color: '#CBD5E1', textAlign: 'left', marginBottom: 60 },
+  textSection: {
+    paddingTop: 200,
+    paddingHorizontal: 200,
+    paddingBottom: 100,
+    backgroundColor: '#231F20',
+  },
+  sectionTitle: { fontSize: 100, fontWeight: 'bold', color: '#F4FAFF', textAlign: 'left', marginBottom: 40 },
+  sectionText: { fontSize: 24, lineHeight: 36, color: '#DEFFFE', textAlign: 'left', marginBottom: 60 },
 
   teamRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', marginBottom: 60 },
   teamMember: { width: 250, marginBottom: 40, marginHorizontal: 40, marginTop: 10, alignItems: 'center' },
-  teamPhoto: { width: 250, height: 250, borderRadius: 50, backgroundColor: '#0F172A', marginBottom: 16, borderWidth: 1, borderColor: '#1E3A8A' },
-  personName: { fontSize: 32, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 8, textAlign: 'center' },
-  personText: { fontSize: 20, color: '#94A3B8', lineHeight: 28, textAlign: 'center' },
+  teamPhoto: {
+    width: 250,
+    height: 250,
+    borderRadius: 50,
+    backgroundColor: '#202C59',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+  },
+  personName: { fontSize: 32, fontWeight: 'bold', color: '#F4FAFF', marginBottom: 8, textAlign: 'center' },
+  personText: { fontSize: 20, color: '#DEFFFE', lineHeight: 28, textAlign: 'center' },
 
-  faqItem: { marginBottom: 24, borderWidth: 1, borderColor: '#1E3A8A', borderRadius: 12, overflow: 'hidden', backgroundColor: '#020617' },
+  faqItem: {
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#202C59',
+  },
   faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  faqQuestion: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF' },
-  faqDivider: { height: 1, backgroundColor: '#1E3A8A', marginHorizontal: 16 },
-  faqAnswer: { fontSize: 20, color: '#CBD5E1', padding: 16 },
+  faqQuestion: { fontSize: 24, fontWeight: 'bold', color: '#F4FAFF' },
+  faqDivider: { height: 1, backgroundColor: '#3D8FB3', marginHorizontal: 16 },
+  faqAnswer: { fontSize: 20, color: '#DEFFFE', padding: 16 },
 });
 
 const stylesMainLight = StyleSheet.create({
   background: { flex: 1, width: '100%', height: '100%' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255, 255, 255, 0.25)' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 250, 255, 0.25)' },
 
   mainTextBlock: { justifyContent: 'center', alignItems: 'flex-start', marginLeft: 200, paddingVertical: 350 },
-  mainText: { fontSize: 120, fontWeight: 'bold', color: '#020617', textAlign: 'left', marginBottom: 40, letterSpacing: 1 },
+  mainText: { fontSize: 120, fontWeight: 'bold', color: '#202C59', textAlign: 'left', marginBottom: 40, letterSpacing: 1 },
   secondaryTextBlock: { flexDirection: 'row' },
 
-  menuItem: { borderWidth: 1, borderColor: '#2563EB', borderRadius: 12, paddingHorizontal: 28, paddingVertical: 16, marginRight: 24, backgroundColor: 'rgba(255,255,255,0.7)' },
-  menuItemPressed: { backgroundColor: 'rgba(37,99,235,0.15)' },
-  menuText: { color: '#020617', fontSize: 24, fontWeight: '500' },
+  menuItem: {
+    borderWidth: 1,
+    borderColor: '#202C59',
+    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    marginRight: 24,
+    backgroundColor: 'rgba(222, 255, 254, 0.75)',
+  },
+  menuItemPressed: { backgroundColor: 'rgba(252, 158, 79, 0.18)' },
+  menuText: { color: '#202C59', fontSize: 24, fontWeight: '500' },
 
-  textSection: { paddingTop: 200, paddingHorizontal: 200, paddingBottom: 100, backgroundColor: '#F8FAFC' },
-  sectionTitle: { fontSize: 100, fontWeight: 'bold', color: '#020617', textAlign: 'left', marginBottom: 40 },
-  sectionText: { fontSize: 24, lineHeight: 36, color: '#334155', textAlign: 'left', marginBottom: 60 },
+  textSection: {
+    paddingTop: 200,
+    paddingHorizontal: 200,
+    paddingBottom: 100,
+    backgroundColor: '#F4FAFF',
+  },
+  sectionTitle: { fontSize: 100, fontWeight: 'bold', color: '#202C59', textAlign: 'left', marginBottom: 40 },
+  sectionText: { fontSize: 24, lineHeight: 36, color: '#3D8FB3', textAlign: 'left', marginBottom: 60 },
 
   teamRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', marginBottom: 60 },
   teamMember: { width: 250, marginBottom: 40, marginHorizontal: 40, marginTop: 10, alignItems: 'center' },
-  teamPhoto: { width: 250, height: 250, borderRadius: 50, backgroundColor: '#E5E7EB', marginBottom: 16, borderWidth: 1, borderColor: '#CBD5E1' },
-  personName: { fontSize: 32, fontWeight: 'bold', color: '#020617', marginBottom: 8, textAlign: 'center' },
-  personText: { fontSize: 20, color: '#475569', lineHeight: 28, textAlign: 'center' },
+  teamPhoto: {
+    width: 250,
+    height: 250,
+    borderRadius: 50,
+    backgroundColor: '#DEFFFE',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+  },
+  personName: { fontSize: 32, fontWeight: 'bold', color: '#202C59', marginBottom: 8, textAlign: 'center' },
+  personText: { fontSize: 20, color: '#3D8FB3', lineHeight: 28, textAlign: 'center' },
 
-  faqItem: { marginBottom: 24, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 12, overflow: 'hidden', backgroundColor: '#FFFFFF' },
+  faqItem: {
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
   faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  faqQuestion: { fontSize: 24, fontWeight: 'bold', color: '#020617' },
-  faqDivider: { height: 1, backgroundColor: '#E2E8F0', marginHorizontal: 16 },
-  faqAnswer: { fontSize: 20, color: '#334155', padding: 16 },
+  faqQuestion: { fontSize: 24, fontWeight: 'bold', color: '#202C59' },
+  faqDivider: { height: 1, backgroundColor: '#DEFFFE', marginHorizontal: 16 },
+  faqAnswer: { fontSize: 20, color: '#3D8FB3', padding: 16 },
 });
