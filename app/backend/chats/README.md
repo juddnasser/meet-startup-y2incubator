@@ -4,6 +4,67 @@ Backend storage system for a P2P chat app using AsyncStorage v3 and Appwrite.
 
 ---
 
+## Installation
+
+```bash
+npx expo install @react-native-async-storage/async-storage
+npx expo install expo-crypto
+```
+
+### Android — required extra step
+
+AsyncStorage v3 ships its own local Maven repository. Without this, the Android
+build will fail to resolve the native module.
+
+Add the following inside `android/build.gradle` (the **project-level** file,
+not the app-level one):
+
+```groovy
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+
+    // Required for AsyncStorage v3
+    maven {
+      url = uri(
+        project(":react-native-async-storage_async-storage")
+          .file("local_repo")
+      )
+    }
+  }
+}
+```
+
+### iOS
+
+No extra steps. Run `pod install` inside the `ios/` directory as normal after
+installing the package.
+
+```bash
+cd ios && pod install
+```
+
+---
+
+## Platform notes
+
+AsyncStorage v3 uses **SQLite** as the storage backend on both Android and iOS.
+The library handles all platform differences internally — your application code
+is identical on both platforms.
+
+The one place explicit platform handling is needed is **UUID generation**
+(`crypto.randomUUID()`), which is not available on older Android JSC engines.
+`platform.js` resolves this automatically:
+
+1. Tries `expo-crypto` (recommended, works everywhere)
+2. Falls back to `crypto.randomUUID()` (safe on Hermes / RN 0.70+)
+3. Last-resort polyfill for very old Android JSC environments
+
+As long as `expo-crypto` is installed you never need to think about this.
+
+
+
 ## File Structure
 
 ```

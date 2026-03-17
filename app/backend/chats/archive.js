@@ -1,174 +1,145 @@
 /**
  * archive.js
- * Manages the archive storage — batches of 300 messages evicted from primary.
+ * Manages the archive storage — sealed batches of 300 messages evicted
+ * from primary storage.
  *
- * Key schema:
- *   archive:<peerId>:meta          → ArchiveMeta
- *   archive:<peerId>:batch:<index> → Message[]
+ * Storage is accessed via getArchiveStorage() (lazy getter) so the native
+ * module is never touched at import time.
+ *
+ * Key schema
+ * ──────────
+ * "archive:<peerId>:meta"           → ArchiveMeta  (JSON)
+ * "archive:<peerId>:batch:<index>"  → Message[]    (JSON)
+ *
+ * Batch indexing
+ * ──────────────
+ * Index 0 = oldest batch.
+ * Index (totalBatches - 1) = most recently opened (possibly still filling) batch.
+ * A batch is sealed once it reaches ARCHIVE_BATCH_SIZE — a new one opens after.
  */
 
-import { archiveStorage } from './instances.js';
-import { ARCHIVE_BATCH_SIZE } from './types.js';
+import { getArchiveStorage }   from './instances.js';
+import { ARCHIVE_BATCH_SIZE }  from './types.js';
 
-// ─── Internal key helpers ────────────────────────────────────────────────────
+// ─── Key helpers ──────────────────────────────────────────────────────────────
 
-const metaKey = (peerId) => `archive:${peerId}:meta`;
+const metaKey  = (peerId) => `archive:${peerId}:meta`;
 const batchKey = (peerId, index) => `archive:${peerId}:batch:${index}`;
 
-// ─── Internal: read archive metadata ────────────────────────────────────────
+// ─── Internal helpers ─────────────────────────────────────────────────────────
 
-async function getArchiveMeta(peerId) {
-  const raw = await archiveStorage.getItem(metaKey(peerId));
-  return raw
-    ? JSON.parse(raw)
-    : { peerId, totalBatches: 0 };
+async function readMeta(peerId) {
+  const raw = await getArchiveStorage().getItem(metaKey(peerId));
+  return raw ? JSON.parse(raw) : { peerId, totalBatches: 0 };
 }
 
-// ─── Internal: write archive metadata ───────────────────────────────────────
-
-async function saveArchiveMeta(meta) {
-  await archiveStorage.setItem(metaKey(meta.peerId), JSON.stringify(meta));
+async function writeMeta(meta) {
+  await getArchiveStorage().setItem(metaKey(meta.peerId), JSON.stringify(meta));
 }
 
-// ─── Internal: read a single batch ──────────────────────────────────────────
-
-async function getArchiveBatch(peerId, batchIndex) {
-  const raw = await archiveStorage.getItem(batchKey(peerId, batchIndex));
+async function readBatch(peerId, index) {
+  const raw = await getArchiveStorage().getItem(batchKey(peerId, index));
   return raw ? JSON.parse(raw) : [];
 }
 
-// ─── Internal: write a single batch ─────────────────────────────────────────
-
-async function saveArchiveBatch(peerId, batchIndex, messages) {
-  await archiveStorage.setItem(
-    batchKey(peerId, batchIndex),
+async function writeBatch(peerId, index, messages) {
+  await getArchiveStorage().setItem(
+    batchKey(peerId, index),
     JSON.stringify(messages)
   );
 }
 
-// ─── Public: push one evicted message into the archive ──────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Called by primary.js whenever a message is evicted from primary storage.
- * Appends the message to the current open archive batch.
- * When that batch reaches ARCHIVE_BATCH_SIZE, it is sealed and a new one opens.
+ * Appends an evicted message to the current open archive batch.
+ * When the batch reaches ARCHIVE_BATCH_SIZE it is sealed and a new
+ * empty batch is opened automatically.
  *
- * @param {string}  peerId  - The peer this message belongs to
+ * Called exclusively by primary.js — not intended for direct use.
+ *
+ * @param {string}                       peerId  - Peer this message belongs to
  * @param {import('./types.js').Message} message - The evicted message
+ * @returns {Promise<void>}
  */
 export async function archiveMessage(peerId, message) {
-  const meta = await getArchiveMeta(peerId);
+  const meta = await readMeta(peerId);
 
-  // The "open" (current) batch index is always the last one
-  const openBatchIndex = meta.totalBatches === 0 ? 0 : meta.totalBatches - 1;
-  const openBatch = await getArchiveBatch(peerId, openBatchIndex);
+  // First ever archive write — open batch 0
+  if (meta.totalBatches === 0) {
+    await writeBatch(peerId, 0, [message]);
+    meta.totalBatches = 1;
+    await writeMeta(meta);
+    return;
+  }
+
+  const openIndex = meta.totalBatches - 1;
+  const openBatch = await readBatch(peerId, openIndex);
 
   openBatch.push(message);
 
   if (openBatch.length >= ARCHIVE_BATCH_SIZE) {
-    // Seal the current batch and start a new one
-    await saveArchiveBatch(peerId, openBatchIndex, openBatch);
+    // Seal the current batch and open a new empty one
+    await writeBatch(peerId, openIndex, openBatch);
+    const newIndex = meta.totalBatches;
+    await writeBatch(peerId, newIndex, []);
     meta.totalBatches += 1;
-    await saveArchiveMeta(meta);
-    // Initialize the new empty batch
-    await saveArchiveBatch(peerId, meta.totalBatches - 1, []);
+    await writeMeta(meta);
   } else {
-    await saveArchiveBatch(peerId, openBatchIndex, openBatch);
-
-    // Ensure meta is initialised if this is the very first archive message
-    if (meta.totalBatches === 0) {
-      meta.totalBatches = 1;
-      await saveArchiveMeta(meta);
-    }
+    await writeBatch(peerId, openIndex, openBatch);
   }
 }
 
-// ─── Public: read a specific archive batch (for paginated history) ───────────
-
 /**
- * Loads a specific archive batch by its index.
- * Index 0 = oldest batch. Index (totalBatches - 1) = most recently sealed batch.
+ * Loads a specific archive batch by index.
+ * 0 = oldest batch, (totalBatches - 1) = most recent.
  *
  * @param {string} peerId
  * @param {number} batchIndex
- * @returns {Promise<import('./types.js').Message[]>}
+ * @returns {Promise<import('./types.js').Message[]>} Empty array if out of range
  */
 export async function readArchiveBatch(peerId, batchIndex) {
-  const meta = await getArchiveMeta(peerId);
-
-  if (batchIndex < 0 || batchIndex >= meta.totalBatches) {
-    return [];
-  }
-
-  return await getArchiveBatch(peerId, batchIndex);
+  const meta = await readMeta(peerId);
+  if (batchIndex < 0 || batchIndex >= meta.totalBatches) return [];
+  return readBatch(peerId, batchIndex);
 }
 
-// ─── Public: get total number of archive batches ────────────────────────────
-
 /**
- * Returns the number of archive batches for a peer.
- * Useful for driving paginated "load older messages" UI.
+ * Returns the total number of archive batches for a peer.
+ * 0 means no archive exists yet.
  *
  * @param {string} peerId
  * @returns {Promise<number>}
  */
 export async function getArchiveBatchCount(peerId) {
-  const meta = await getArchiveMeta(peerId);
+  const meta = await readMeta(peerId);
   return meta.totalBatches;
 }
 
-// ─── Public: edit a message inside the archive ──────────────────────────────
-
 /**
- * Finds and edits a message by its ID across all archive batches for a peer.
- * Scans from the most recent batch backwards (most likely location of recent edits).
+ * Finds and edits a message across all archive batches.
+ * Scans newest → oldest (edits most often target recent messages).
  *
  * @param {string} peerId
  * @param {string} messageId
  * @param {string} newContent
- * @returns {Promise<boolean>} true if the message was found and updated
+ * @returns {Promise<boolean>} true if found and updated
  */
 export async function editArchivedMessage(peerId, messageId, newContent) {
-  const meta = await getArchiveMeta(peerId);
+  const meta = await readMeta(peerId);
 
-  // Scan batches newest → oldest
   for (let i = meta.totalBatches - 1; i >= 0; i--) {
-    const batch = await getArchiveBatch(peerId, i);
-    const idx = batch.findIndex((m) => m.id === messageId);
+    const batch = await readBatch(peerId, i);
+    const idx   = batch.findIndex((m) => m.id === messageId);
 
     if (idx !== -1) {
       batch[idx] = {
         ...batch[idx],
-        content: newContent,
-        edited: true,
+        content:  newContent,
+        edited:   true,
         editedAt: Date.now(),
       };
-      await saveArchiveBatch(peerId, i, batch);
-      return true;
-    }
-  }
-
-  return false; // not found
-}
-
-// ─── Public: delete a message from the archive ──────────────────────────────
-
-/**
- * Finds and removes a message by its ID from the archive.
- *
- * @param {string} peerId
- * @param {string} messageId
- * @returns {Promise<boolean>} true if found and deleted
- */
-export async function deleteArchivedMessage(peerId, messageId) {
-  const meta = await getArchiveMeta(peerId);
-
-  for (let i = meta.totalBatches - 1; i >= 0; i--) {
-    const batch = await getArchiveBatch(peerId, i);
-    const filtered = batch.filter((m) => m.id !== messageId);
-
-    if (filtered.length !== batch.length) {
-      await saveArchiveBatch(peerId, i, filtered);
+      await writeBatch(peerId, i, batch);
       return true;
     }
   }
@@ -176,20 +147,42 @@ export async function deleteArchivedMessage(peerId, messageId) {
   return false;
 }
 
-// ─── Public: wipe all archive data for a peer ───────────────────────────────
-
 /**
- * Deletes all archive batches and meta for a peer.
- * Called when a full conversation is deleted.
+ * Finds and removes a message from across all archive batches.
  *
  * @param {string} peerId
+ * @param {string} messageId
+ * @returns {Promise<boolean>} true if found and deleted
  */
-export async function clearArchive(peerId) {
-  const meta = await getArchiveMeta(peerId);
+export async function deleteArchivedMessage(peerId, messageId) {
+  const meta = await readMeta(peerId);
 
-  for (let i = 0; i < meta.totalBatches; i++) {
-    await archiveStorage.removeItem(batchKey(peerId, i));
+  for (let i = meta.totalBatches - 1; i >= 0; i--) {
+    const batch    = await readBatch(peerId, i);
+    const filtered = batch.filter((m) => m.id !== messageId);
+
+    if (filtered.length !== batch.length) {
+      await writeBatch(peerId, i, filtered);
+      return true;
+    }
   }
 
-  await archiveStorage.removeItem(metaKey(peerId));
+  return false;
+}
+
+/**
+ * Deletes all archive batches and metadata for a peer.
+ * Call alongside deleteConversation() for a complete wipe.
+ *
+ * @param {string} peerId
+ * @returns {Promise<void>}
+ */
+export async function clearArchive(peerId) {
+  const meta = await readMeta(peerId);
+
+  for (let i = 0; i < meta.totalBatches; i++) {
+    await getArchiveStorage().removeItem(batchKey(peerId, i));
+  }
+
+  await getArchiveStorage().removeItem(metaKey(peerId));
 }

@@ -1,44 +1,62 @@
 /**
  * useChat.js
- * React hook that wires the storage layer to the frontend.
+ * React hook that connects the storage layer to the chat UI.
  *
- * Exposes exactly the surface area a chat screen needs:
- *   - messages          current primary messages (live 300)
- *   - loading           true while initial load is in progress
- *   - hasOlderMessages  true if archive batches exist to load
- *   - sendMessage(text) send + persist an outbound message
- *   - editMessage(id, newContent)
- *   - deleteMessage(id)
- *   - loadOlderMessages() paginate one archive batch backwards
+ * All storage access happens inside useEffect / useCallback callbacks —
+ * never at the top level — so the native module is always fully initialised
+ * before any storage call is made.
+ *
+ * Returned surface area
+ * ─────────────────────
+ *   messages            Message[]  — current primary window (up to 300)
+ *   loading             boolean    — true during the initial storage load
+ *   hasOlderMessages    boolean    — true while archive batches remain to load
+ *   sendMessage(text)              — compose, persist, and transmit a message
+ *   editMessage(id, content)       — edit in-place (primary, archive fallback)
+ *   deleteMessage(id)              — delete by ID (primary, archive fallback)
+ *   loadOlderMessages()            — prepend one archive batch (call on scroll-up)
+ *   syncFromAppwrite(rows)         — bulk-ingest Appwrite rows on connect / backfill
+ *
+ * Expected p2pTransport interface
+ * ────────────────────────────────
+ *   p2pTransport.send(peerId, message)       → Promise<void>
+ *   p2pTransport.onMessage(peerId, handler)  → unsubscribeFn
+ *
+ *   The handler receives a raw Appwrite row:
+ *     { sender_id, sent_id, content, $createdAt }
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { generateId }             from './platform.js';
 import {
   patchMessage,
   readMessages,
-  editMessage as storageEditMessage,
-  deleteMessage as storageDeleteMessage,
+  editMessage   as storageEdit,
+  deleteMessage as storageDelete,
+} from './primary.js';
+import {
   getArchiveBatchCount,
   readArchiveBatch,
+} from './archive.js';
+import {
   loadInboundMessage,
-  deduplicateRows,
   loadMessageBatch,
-} from './index.js';
+  deduplicateRows,
+} from './appwrite.js';
 
 /**
- * @param {string}   peerId       - The remote peer's ID
- * @param {string}   myId         - The local user's peer ID
- * @param {object}   p2pTransport - Your P2P transport adapter (see interface below)
- *
- * p2pTransport interface expected:
- *   p2pTransport.send(peerId, message)       → Promise<void>
- *   p2pTransport.onMessage(peerId, handler)  → unsubscribe()
+ * @param {string} peerId        - Remote peer's ID
+ * @param {string} myId          - Local user's peer ID
+ * @param {object} p2pTransport  - Transport adapter (see interface above)
  */
 export function useChat(peerId, myId, p2pTransport) {
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [messages,         setMessages]         = useState([]);
+  const [loading,          setLoading]          = useState(true);
   const [hasOlderMessages, setHasOlderMessages] = useState(false);
-  const archivePageRef = useRef(null); // tracks which archive batch to load next
+
+  // Tracks the next archive batch index to load on scroll-up.
+  // Counts down from (totalBatches - 1) toward 0.
+  const archivePageRef = useRef(null);
 
   // ── Initial load ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -58,10 +76,7 @@ export function useChat(peerId, myId, p2pTransport) {
 
       setMessages(primary);
       setHasOlderMessages(batchCount > 0);
-
-      // Start pagination from the most recent archive batch
       archivePageRef.current = batchCount - 1;
-
       setLoading(false);
     }
 
@@ -74,45 +89,47 @@ export function useChat(peerId, myId, p2pTransport) {
     if (!peerId || !p2pTransport) return;
 
     const unsubscribe = p2pTransport.onMessage(peerId, async (appwriteRow) => {
-      // appwriteRow is the raw Appwrite shape: { sender_id, sent_id, content, $createdAt }
       const current = await readMessages(peerId);
-      const newRows = deduplicateRows([appwriteRow], current);
-      if (newRows.length === 0) return; // already stored
+      const newRows  = deduplicateRows([appwriteRow], current);
+      if (newRows.length === 0) return; // already stored — skip
 
       const message = await loadInboundMessage(appwriteRow, myId);
-      setMessages((prev) => {
-        const updated = [...prev, message];
-        // Keep UI list trimmed to 300 to match primary storage
-        return updated.slice(-300).sort((a, b) => a.dateSent - b.dateSent);
-      });
+
+      setMessages((prev) =>
+        [...prev, message]
+          .sort((a, b) => a.dateSent - b.dateSent)
+          .slice(-300)
+      );
     });
 
     return unsubscribe;
   }, [peerId, myId, p2pTransport]);
 
-  // ── CRUD: send a new outbound message ─────────────────────────────────────
+  // ── CRUD: send ─────────────────────────────────────────────────────────────
   const sendMessage = useCallback(async (content) => {
     const message = {
-      id: crypto.randomUUID(),
-      senderId: myId,
+      id:        await generateId(),
+      senderId:  myId,
       content,
-      dateSent: Date.now(),
+      dateSent:  Date.now(),
       direction: 'sent',
-      edited: false,
+      edited:    false,
     };
 
-    // Persist before sending — crash-safe
+    // Persist before transmitting — crash-safe ordering
     await patchMessage(peerId, message);
     await p2pTransport.send(peerId, message);
 
     setMessages((prev) =>
-      [...prev, message].slice(-300).sort((a, b) => a.dateSent - b.dateSent)
+      [...prev, message]
+        .sort((a, b) => a.dateSent - b.dateSent)
+        .slice(-300)
     );
   }, [peerId, myId, p2pTransport]);
 
-  // ── CRUD: edit an existing message ────────────────────────────────────────
+  // ── CRUD: edit ─────────────────────────────────────────────────────────────
   const editMessage = useCallback(async (messageId, newContent) => {
-    const result = await storageEditMessage(peerId, messageId, newContent);
+    const result = await storageEdit(peerId, messageId, newContent);
 
     if (result !== 'not_found') {
       setMessages((prev) =>
@@ -124,18 +141,18 @@ export function useChat(peerId, myId, p2pTransport) {
       );
     }
 
-    return result;
+    return result; // 'primary' | 'archive' | 'not_found'
   }, [peerId]);
 
-  // ── CRUD: delete a message ────────────────────────────────────────────────
+  // ── CRUD: delete ───────────────────────────────────────────────────────────
   const deleteMessage = useCallback(async (messageId) => {
-    const result = await storageDeleteMessage(peerId, messageId);
+    const result = await storageDelete(peerId, messageId);
 
     if (result !== 'not_found') {
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
     }
 
-    return result;
+    return result; // 'primary' | 'archive' | 'not_found'
   }, [peerId]);
 
   // ── Pagination: load one archive batch older than current view ────────────
@@ -148,23 +165,20 @@ export function useChat(peerId, myId, p2pTransport) {
     const batch = await readArchiveBatch(peerId, archivePageRef.current);
     archivePageRef.current -= 1;
 
-    if (archivePageRef.current < 0) {
-      setHasOlderMessages(false);
-    }
-
+    if (archivePageRef.current < 0) setHasOlderMessages(false);
     if (batch.length > 0) {
       setMessages((prev) => [...batch, ...prev]); // prepend older messages
     }
   }, [peerId]);
 
-  // ── Bulk sync: load a batch from Appwrite (e.g. on first connection) ──────
+  // ── Bulk sync from Appwrite (on connect / backfill) ───────────────────────
   const syncFromAppwrite = useCallback(async (appwriteRows) => {
     const current = await readMessages(peerId);
-    const newRows = deduplicateRows(appwriteRows, current);
-    if (newRows.length === 0) return;
+    const newRows  = deduplicateRows(appwriteRows, current);
+    if (newRows.length === 0) return [];
 
     const processed = await loadMessageBatch(newRows, myId, peerId);
-    const refreshed = await readMessages(peerId); // re-read after batch patch
+    const refreshed  = await readMessages(peerId); // re-read after all patches
     setMessages(refreshed);
     return processed;
   }, [peerId, myId]);
