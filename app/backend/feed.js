@@ -81,9 +81,9 @@ async function getMostCompatableUsers(userId) {
 
 
 
-    let parsedData = allUsersData.then(function (users) {
+    let parsedData = allUsersData["documents"].then(function (users) {
         users.forEach(user => {
-            compatabilities[user.$id] = getCompatability(userId, user.rows[0].data.$id);
+            compatabilities[user.$id] = getCompatability(userId, user.$id);
         });
     });
 
