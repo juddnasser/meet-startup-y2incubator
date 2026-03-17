@@ -10,7 +10,7 @@ import {
   ImageBackground,
 } from 'react-native';
 import Header from '../../header';
-import { useChat } from './useChat';
+import { useChat } from './index';
 
 const transport = {
   async send(peerId, message) {
