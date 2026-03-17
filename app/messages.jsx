@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import {
   ImageBackground,
@@ -12,70 +11,166 @@ import Header from './header';
 
 const conversations = [
   {
-    id: 'mentor-1',
-    name: 'Rivka',
-    preview: 'I can help with the first steps into studies.',
+    id: 'user1',
+    name: 'Moshe',
+    topic: 'Mentorship',
+    preview: 'I can help you understand how to start learning programming.',
+    unread: true,
   },
   {
-    id: 'mentor-2',
-    name: 'David',
-    preview: 'Happy to talk about work and practical next steps.',
-  },
-  {
-    id: 'mentor-3',
+    id: 'user2',
     name: 'Yael',
-    preview: 'You are not alone in this process.',
+    topic: 'Emotional Support',
+    preview: 'You can talk to me anytime if you feel stuck.',
+    unread: false,
+  },
+  {
+    id: 'user3',
+    name: 'David',
+    topic: 'Career Help',
+    preview: 'Let’s figure out what direction works best for you.',
+    unread: true,
   },
 ];
 
 export default function MessagesPage() {
   const mode = 0;
-  const styles = mode === 0 ? dark : light;
+  const isDark = mode === 0;
 
   return (
     <View style={{ flex: 1 }}>
       <ImageBackground
         source={{
-          uri:
-            mode === 0
-              ? 'https://static.vecteezy.com/system/resources/thumbnails/007/278/150/small_2x/dark-background-abstract-with-light-effect-vector.jpg'
-              : 'https://images.ctfassets.net/nnkxuzam4k38/5uWJWkeNbfKj1xCb0QYw4W/5f98c1cf50300f106e1027609733e4cb/white-triangle.jpg',
+          uri: isDark
+            ? 'https://static.vecteezy.com/system/resources/thumbnails/007/278/150/small_2x/dark-background-abstract-with-light-effect-vector.jpg'
+            : 'https://images.ctfassets.net/nnkxuzam4k38/5uWJWkeNbfKj1xCb0QYw4W/5f98c1cf50300f106e1027609733e4cb/white-triangle.jpg',
         }}
         style={styles.background}
-        resizeMode="cover"
       >
-        <BlurView
-          intensity={40}
-          tint={mode === 0 ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: isDark
+              ? 'rgba(35,31,32,0.5)'
+              : 'rgba(255,255,255,0.4)',
+          }}
         />
-        <View style={styles.overlay} />
+
         <Header mode={mode} />
 
-        <ScrollView contentContainerStyle={styles.page}>
-          <Text style={styles.title}>Messages</Text>
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.top}>
+            <Text
+              style={{
+                fontSize: 32,
+                fontWeight: '700',
+                marginBottom: 8,
+                color: isDark ? '#F4FAFF' : '#202C59',
+              }}
+            >
+              Messages
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 15,
+                color: isDark ? '#DEFFFE' : '#202C59',
+              }}
+            >
+              Continue your conversations with people who support you.
+            </Text>
+          </View>
 
           {conversations.map((item) => (
             <Pressable
               key={item.id}
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
               onPress={() =>
                 router.push({
-                  pathname: '/chat/[peerId]',
+                  pathname: '/backend/chats/[peerId]',
                   params: { peerId: item.id, name: item.name },
                 })
               }
+              style={({ pressed }) => [
+                styles.card,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(32,44,89,0.9)'
+                    : '#ffffff',
+                  borderColor: '#3D8FB3',
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}
             >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.name[0]}</Text>
+              <View
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: 18,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12,
+                  backgroundColor: isDark ? '#231F20' : '#F4FAFF',
+                  borderWidth: 1,
+                  borderColor: '#3D8FB3',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 22,
+                    fontWeight: '700',
+                    color: isDark ? '#FC9E4F' : '#202C59',
+                  }}
+                >
+                  {item.name[0]}
+                </Text>
               </View>
 
-              <View style={styles.textWrap}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.preview}>{item.preview}</Text>
+              <View style={{ flex: 1 }}>
+                <View style={styles.rowTop}>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: '700',
+                      color: isDark ? '#F4FAFF' : '#202C59',
+                    }}
+                  >
+                    {item.name}
+                  </Text>
+
+                  {item.unread && (
+                    <View
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 10,
+                        backgroundColor: '#FC9E4F',
+                      }}
+                    />
+                  )}
+                </View>
+
+                <Text
+                  style={{
+                    fontSize: 13,
+                    marginBottom: 6,
+                    color: isDark ? '#DEFFFE' : '#3D8FB3',
+                  }}
+                >
+                  {item.topic}
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: isDark ? '#F4FAFF' : '#202C59',
+                  }}
+                >
+                  {item.preview}
+                </Text>
               </View>
             </Pressable>
           ))}
@@ -85,102 +180,35 @@ export default function MessagesPage() {
   );
 }
 
-const base = {
-  background: { flex: 1, width: '100%', height: '100%' },
-  page: {
+const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+
+  container: {
     paddingTop: 120,
     paddingBottom: 40,
-    paddingHorizontal: 18,
-    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  title: {
-    width: '100%',
-    maxWidth: 760,
-    fontSize: 34,
-    fontWeight: '700',
-    marginBottom: 18,
+
+  top: {
+    marginBottom: 20,
   },
-  row: {
-    width: '100%',
-    maxWidth: 760,
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
+
+  card: {
     flexDirection: 'row',
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 12,
     alignItems: 'center',
   },
-  rowPressed: {
-    opacity: 0.95,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+
+  rowTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
   },
-  avatarText: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  textWrap: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  preview: {
-    fontSize: 14,
-    lineHeight: 21,
-  },
-};
-
-const dark = StyleSheet.create({
-  ...base,
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(35, 31, 32, 0.45)',
-  },
-  title: { ...base.title, color: '#F4FAFF' },
-  row: {
-    ...base.row,
-    borderColor: '#3D8FB3',
-    backgroundColor: 'rgba(32, 44, 89, 0.9)',
-  },
-  avatar: {
-    ...base.avatar,
-    backgroundColor: '#231F20',
-    borderWidth: 1,
-    borderColor: '#3D8FB3',
-  },
-  avatarText: { ...base.avatarText, color: '#FC9E4F' },
-  name: { ...base.name, color: '#F4FAFF' },
-  preview: { ...base.preview, color: '#DEFFFE' },
-});
-
-const light = StyleSheet.create({
-  ...base,
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(244, 250, 255, 0.28)',
-  },
-  title: { ...base.title, color: '#202C59' },
-  row: {
-    ...base.row,
-    borderColor: '#3D8FB3',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-  },
-  avatar: {
-    ...base.avatar,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#3D8FB3',
-  },
-  avatarText: { ...base.avatarText, color: '#202C59' },
-  name: { ...base.name, color: '#202C59' },
-  preview: { ...base.preview, color: '#3D8FB3' },
 });

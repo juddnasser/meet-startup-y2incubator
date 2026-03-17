@@ -1,4 +1,3 @@
-// app/signup.jsx
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -15,81 +14,52 @@ import {
 import Header from './header';
 import { SetupUserInDB } from './backend/user';
 
-const SUPPORT_OPTIONS = [
-  'Financial Support',
-  'Emotional Support',
-  'Mentorship',
-  'Professional Advice',
-  'Other',
-];
-
 export default function SignupPage() {
   const mode = 0;
   const styles = mode === 0 ? dark : light;
 
   const [form, setForm] = useState({
-    name: '',
     email: '',
     password: '',
+    fullName: '',
     age: '',
     description: '',
-    communityType: 'Haredi',
-    supportDirection: 'I need support',
-    selectedSupports: [],
   });
-
-  const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function toggleSupport(option) {
-    setForm((prev) => {
-      const exists = prev.selectedSupports.includes(option);
-      return {
-        ...prev,
-        selectedSupports: exists
-          ? prev.selectedSupports.filter((item) => item !== option)
-          : [...prev.selectedSupports, option],
-      };
-    });
-  }
-
   async function handleSignup() {
-    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
-      Alert.alert('Missing details', 'Name, email and password are required.');
+    if (!form.email.trim() || !form.password.trim() || !form.fullName.trim()) {
+      Alert.alert('Missing details', 'Please fill email, password, and full name.');
       return;
     }
 
     try {
-      setBusy(true);
-
-      const role = [
-        form.communityType,
-        form.supportDirection,
-        ...form.selectedSupports,
-      ].join(' | ');
+      setSaving(true);
 
       const ok = await SetupUserInDB({
-        name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
+        name: form.fullName.trim(),
         age: form.age ? Number(form.age) : null,
-        role,
         description: form.description.trim(),
+        role: '',
+        pfp: 0,
       });
 
       if (ok === false) {
         throw new Error('Signup failed');
       }
 
-      router.replace('/home');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Signup failed', 'Could not create the account.');
+      router.replace('/feed');
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Could not sign up', 'Please try again.');
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   }
 
@@ -115,148 +85,76 @@ export default function SignupPage() {
 
         <ScrollView contentContainerStyle={styles.page}>
           <View style={styles.card}>
-            <Text style={styles.title}>Create your profile</Text>
+            <Text style={styles.title}>Sign up</Text>
             <Text style={styles.subtitle}>
-              Join Hidush and tell us what kind of support matters to you.
+              Create your account and tell us a little about yourself.
             </Text>
 
-            <Text style={styles.label}>You are</Text>
-            <View style={styles.chipRow}>
-              {['Haredi', 'Not Haredi'].map((option) => {
-                const active = form.communityType === option;
-                return (
-                  <Pressable
-                    key={option}
-                    style={[styles.chip, active ? styles.chipActive : null]}
-                    onPress={() => updateField('communityType', option)}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        active ? styles.chipTextActive : null,
-                      ]}
-                    >
-                      {option}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
+            <Text style={styles.label}>Email / Username</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Full name"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              value={form.name}
-              onChangeText={(value) => updateField('name', value)}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              autoCapitalize="none"
-              keyboardType="email-address"
               value={form.email}
               onChangeText={(value) => updateField('email', value)}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="name@example.com"
+              placeholderTextColor={mode === 0 ? '#8FA3B7' : '#6A7C8F'}
+              style={styles.input}
             />
 
+            <Text style={styles.label}>Password</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              secureTextEntry
               value={form.password}
               onChangeText={(value) => updateField('password', value)}
+              secureTextEntry
+              placeholder="Password"
+              placeholderTextColor={mode === 0 ? '#8FA3B7' : '#6A7C8F'}
+              style={styles.input}
             />
 
+            <Text style={styles.label}>Full name</Text>
             <TextInput
+              value={form.fullName}
+              onChangeText={(value) => updateField('fullName', value)}
+              placeholder="Full name"
+              placeholderTextColor={mode === 0 ? '#8FA3B7' : '#6A7C8F'}
               style={styles.input}
-              placeholder="Age"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              keyboardType="numeric"
+            />
+
+            <Text style={styles.label}>Age</Text>
+            <TextInput
               value={form.age}
               onChangeText={(value) => updateField('age', value)}
+              keyboardType="numeric"
+              placeholder="Age"
+              placeholderTextColor={mode === 0 ? '#8FA3B7' : '#6A7C8F'}
+              style={styles.input}
             />
 
+            <Text style={styles.label}>Description</Text>
             <TextInput
-              style={[styles.input, styles.bigInput]}
-              placeholder="A few words about yourself"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              multiline
               value={form.description}
               onChangeText={(value) => updateField('description', value)}
+              multiline
+              placeholder="Write a short description about yourself"
+              placeholderTextColor={mode === 0 ? '#8FA3B7' : '#6A7C8F'}
+              style={[styles.input, styles.descriptionInput]}
             />
 
-            <Text style={styles.label}>This account is for</Text>
-            <View style={styles.chipRow}>
-              {['I need support', 'I can offer support'].map((option) => {
-                const active = form.supportDirection === option;
-                return (
-                  <Pressable
-                    key={option}
-                    style={[styles.chip, active ? styles.chipActive : null]}
-                    onPress={() => updateField('supportDirection', option)}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        active ? styles.chipTextActive : null,
-                      ]}
-                    >
-                      {option}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text style={styles.label}>
-              {form.supportDirection === 'I need support'
-                ? 'What kind of support do you need?'
-                : 'What support can you offer?'}
-            </Text>
-
-            <View style={styles.supportWrap}>
-              {SUPPORT_OPTIONS.map((option) => {
-                const active = form.selectedSupports.includes(option);
-                return (
-                  <Pressable
-                    key={option}
-                    style={[
-                      styles.supportChip,
-                      active ? styles.supportChipActive : null,
-                    ]}
-                    onPress={() => toggleSupport(option)}
-                  >
-                    <Text
-                      style={[
-                        styles.supportChipText,
-                        active ? styles.supportChipTextActive : null,
-                      ]}
-                    >
-                      {option}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
             <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                pressed ? styles.buttonPressed : null,
-              ]}
               onPress={handleSignup}
-              disabled={busy}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.primaryButtonPressed,
+              ]}
+              disabled={saving}
             >
-              <Text style={styles.buttonText}>
-                {busy ? 'Creating account...' : 'Sign up'}
+              <Text style={styles.primaryButtonText}>
+                {saving ? 'Creating account...' : 'Sign up'}
               </Text>
             </Pressable>
 
             <Pressable onPress={() => router.push('/login')}>
-              <Text style={styles.link}>Already registered? Login</Text>
+              <Text style={styles.linkText}>Already have an account? Log in</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -265,272 +163,159 @@ export default function SignupPage() {
   );
 }
 
-const dark = StyleSheet.create({
+const base = {
   background: {
     flex: 1,
     width: '100%',
     height: '100%',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(35, 31, 32, 0.45)',
-  },
   page: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 18,
     paddingTop: 120,
-    paddingBottom: 36,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
   },
   card: {
     width: '100%',
-    maxWidth: 640,
-    borderRadius: 20,
+    maxWidth: 560,
+    borderRadius: 22,
     borderWidth: 1,
-    padding: 26,
-    backgroundColor: 'rgba(32, 44, 89, 0.9)',
-    borderColor: '#3D8FB3',
+    padding: 24,
   },
   title: {
-    fontSize: 33,
+    fontSize: 34,
     fontWeight: '700',
     marginBottom: 8,
-    color: '#F4FAFF',
   },
   subtitle: {
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 22,
-    color: '#DEFFFE',
+    marginBottom: 20,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 10,
-    color: '#F4FAFF',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-    gap: 10,
-  },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    backgroundColor: '#231F20',
-    borderColor: '#3D8FB3',
-  },
-  chipActive: {
-    backgroundColor: '#FC9E4F',
-    borderColor: '#FC9E4F',
-  },
-  chipText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F4FAFF',
-  },
-  chipTextActive: {
-    color: '#202C59',
+    marginBottom: 8,
+    marginTop: 6,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 14,
-    fontSize: 16,
-    marginBottom: 14,
-    color: '#F4FAFF',
-    backgroundColor: '#231F20',
-    borderColor: '#3D8FB3',
-  },
-  bigInput: {
-    minHeight: 110,
-    textAlignVertical: 'top',
-  },
-  supportWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-    gap: 10,
-  },
-  supportChip: {
-    borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingVertical: 14,
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  descriptionInput: {
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  primaryButton: {
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  primaryButtonPressed: {
+    opacity: 0.92,
+  },
+  primaryButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  linkText: {
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 15,
+  },
+};
+
+const dark = StyleSheet.create({
+  ...base,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(35, 31, 32, 0.45)',
+  },
+  card: {
+    ...base.card,
+    backgroundColor: 'rgba(32, 44, 89, 0.9)',
+    borderColor: '#3D8FB3',
+  },
+  title: {
+    ...base.title,
+    color: '#F4FAFF',
+  },
+  subtitle: {
+    ...base.subtitle,
+    color: '#DEFFFE',
+  },
+  label: {
+    ...base.label,
+    color: '#F4FAFF',
+  },
+  input: {
+    ...base.input,
+    color: '#F4FAFF',
     backgroundColor: '#231F20',
     borderColor: '#3D8FB3',
   },
-  supportChipActive: {
-    backgroundColor: 'rgba(252, 158, 79, 0.18)',
-    borderColor: '#FC9E4F',
-  },
-  supportChipText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#F4FAFF',
-  },
-  supportChipTextActive: {
-    color: '#FC9E4F',
-  },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 6,
+  descriptionInput: base.descriptionInput,
+  primaryButton: {
+    ...base.primaryButton,
     backgroundColor: '#FC9E4F',
   },
-  buttonPressed: {
-    opacity: 0.9,
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '600',
+  primaryButtonText: {
+    ...base.primaryButtonText,
     color: '#202C59',
   },
-  link: {
-    textAlign: 'center',
-    marginTop: 18,
-    fontSize: 15,
+  linkText: {
+    ...base.linkText,
     color: '#DEFFFE',
   },
 });
 
 const light = StyleSheet.create({
-  background: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
+  ...base,
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(244, 250, 255, 0.28)',
   },
-  page: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingTop: 120,
-    paddingBottom: 36,
-  },
   card: {
-    width: '100%',
-    maxWidth: 640,
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 26,
-    backgroundColor: 'rgba(244, 250, 255, 0.94)',
+    ...base.card,
+    backgroundColor: 'rgba(255,255,255,0.94)',
     borderColor: '#3D8FB3',
   },
   title: {
-    fontSize: 33,
-    fontWeight: '700',
-    marginBottom: 8,
+    ...base.title,
     color: '#202C59',
   },
   subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 22,
+    ...base.subtitle,
     color: '#202C59',
   },
   label: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 10,
-    color: '#202C59',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-    gap: 10,
-  },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    backgroundColor: '#FFFFFF',
-    borderColor: '#3D8FB3',
-  },
-  chipActive: {
-    backgroundColor: '#FC9E4F',
-    borderColor: '#FC9E4F',
-  },
-  chipText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#202C59',
-  },
-  chipTextActive: {
+    ...base.label,
     color: '#202C59',
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 14,
-    fontSize: 16,
-    marginBottom: 14,
+    ...base.input,
     color: '#202C59',
     backgroundColor: '#FFFFFF',
     borderColor: '#3D8FB3',
   },
-  bigInput: {
-    minHeight: 110,
-    textAlignVertical: 'top',
-  },
-  supportWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-    gap: 10,
-  },
-  supportChip: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    backgroundColor: '#FFFFFF',
-    borderColor: '#3D8FB3',
-  },
-  supportChipActive: {
-    backgroundColor: 'rgba(252, 158, 79, 0.16)',
-    borderColor: '#FC9E4F',
-  },
-  supportChipText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#202C59',
-  },
-  supportChipTextActive: {
-    color: '#202C59',
-  },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 6,
+  descriptionInput: base.descriptionInput,
+  primaryButton: {
+    ...base.primaryButton,
     backgroundColor: '#FC9E4F',
   },
-  buttonPressed: {
-    opacity: 0.9,
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '600',
+  primaryButtonText: {
+    ...base.primaryButtonText,
     color: '#202C59',
   },
-  link: {
-    textAlign: 'center',
-    marginTop: 18,
-    fontSize: 15,
+  linkText: {
+    ...base.linkText,
     color: '#202C59',
   },
 });

@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import Header from './header';
 import { enterSession } from './backend/user';
-
 export default function LoginPage() {
   const mode = 0;
   const styles = mode === 0 ? dark : light;

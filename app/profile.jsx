@@ -1,4 +1,5 @@
 import { BlurView } from 'expo-blur';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import {
   Alert,
@@ -17,16 +18,8 @@ export default function ProfilePage() {
   const mode = 0;
   const styles = mode === 0 ? dark : light;
 
-  const [form, setForm] = useState({
-    id: 'demo-user-row-id',
-    name: 'Demo user',
-    age: '22',
-    role: 'Student',
-    jobdesc: 'Trying to move forward in education and work.',
-    pfp: 0,
-  });
-
-  const [busy, setBusy] = useState(false);
+ 
+  const [saving, setSaving] = useState(false);
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -34,24 +27,28 @@ export default function ProfilePage() {
 
   async function handleSave() {
     try {
-      setBusy(true);
+      setSaving(true);
 
-      const ok = await editUserInDB({
+      const result = await editUserInDB({
         ...form,
         age: form.age ? Number(form.age) : null,
       });
 
-      if (ok === false) {
-        throw new Error('Update failed');
+      if (result === false) {
+        throw new Error('Save failed');
       }
 
       Alert.alert('Saved', 'Your profile was updated.');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Update failed', 'Could not save the changes.');
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Could not save', 'Please try again.');
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
+  }
+
+  function handleSignOut() {
+    router.replace('/login');
   }
 
   return (
@@ -76,57 +73,61 @@ export default function ProfilePage() {
 
         <ScrollView contentContainerStyle={styles.page}>
           <View style={styles.card}>
-            <Text style={styles.title}>My profile</Text>
+            <Text style={styles.title}>Profile</Text>
             <Text style={styles.subtitle}>
-              Keep the details simple. You can change them anytime.
+              Update your details and keep your profile current.
             </Text>
 
+            <Text style={styles.label}>Full name</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Name"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              value={form.name}
               onChangeText={(value) => updateField('name', value)}
+              placeholder="Full name"
+              placeholderTextColor={mode === 0 ? '#8FA3B7' : '#6A7C8F'}
+              style={styles.input}
             />
 
+            <Text style={styles.label}>Age</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Age"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              keyboardType="numeric"
-              value={form.age}
               onChangeText={(value) => updateField('age', value)}
-            />
-
-            <TextInput
+              keyboardType="numeric"
+              placeholder="Age"
+              placeholderTextColor={mode === 0 ? '#8FA3B7' : '#6A7C8F'}
               style={styles.input}
-              placeholder="Role"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              value={form.role}
-              onChangeText={(value) => updateField('role', value)}
             />
 
+            <Text style={styles.label}>Description</Text>
             <TextInput
-              style={[styles.input, styles.bigInput]}
-              placeholder="Description"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              multiline
-              value={form.jobdesc}
               onChangeText={(value) => updateField('jobdesc', value)}
+              multiline
+              placeholder="Tell people a bit about yourself"
+              placeholderTextColor={mode === 0 ? '#8FA3B7' : '#6A7C8F'}
+              style={[styles.input, styles.descriptionInput]}
             />
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={handleSave}
-              disabled={busy}
-            >
-              <Text style={styles.buttonText}>
-                {busy ? 'Saving...' : 'Save changes'}
-              </Text>
-            </Pressable>
+            <View style={styles.buttonRow}>
+              <Pressable
+                onPress={handleSave}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && styles.primaryButtonPressed,
+                ]}
+                disabled={saving}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {saving ? 'Saving...' : 'Save changes'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleSignOut}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.secondaryButtonPressed,
+                ]}
+              >
+                <Text style={styles.secondaryButtonText}>Sign out</Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </ImageBackground>
@@ -135,55 +136,85 @@ export default function ProfilePage() {
 }
 
 const base = {
-  background: { flex: 1, width: '100%', height: '100%' },
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   page: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 18,
     paddingTop: 120,
-    paddingBottom: 36,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
   },
   card: {
     width: '100%',
-    maxWidth: 560,
-    borderRadius: 20,
+    maxWidth: 620,
+    borderRadius: 24,
     borderWidth: 1,
-    padding: 26,
+    padding: 24,
   },
   title: {
-    fontSize: 33,
+    fontSize: 34,
     fontWeight: '700',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 22,
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 6,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 15,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 16,
-    marginBottom: 14,
+    marginBottom: 8,
   },
-  bigInput: {
+  descriptionInput: {
     minHeight: 120,
     textAlignVertical: 'top',
   },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 6,
+  buttonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 18,
   },
-  buttonPressed: {
+  primaryButton: {
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  primaryButtonPressed: {
     opacity: 0.92,
   },
-  buttonText: {
-    fontSize: 17,
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 10,
+  },
+  secondaryButtonPressed: {
+    opacity: 0.92,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
     fontWeight: '600',
   },
 };
@@ -199,20 +230,42 @@ const dark = StyleSheet.create({
     backgroundColor: 'rgba(32, 44, 89, 0.9)',
     borderColor: '#3D8FB3',
   },
-  title: { ...base.title, color: '#F4FAFF' },
-  subtitle: { ...base.subtitle, color: '#DEFFFE' },
+  title: {
+    ...base.title,
+    color: '#F4FAFF',
+  },
+  subtitle: {
+    ...base.subtitle,
+    color: '#DEFFFE',
+  },
+  label: {
+    ...base.label,
+    color: '#F4FAFF',
+  },
   input: {
     ...base.input,
     color: '#F4FAFF',
     backgroundColor: '#231F20',
     borderColor: '#3D8FB3',
   },
-  bigInput: base.bigInput,
-  button: {
-    ...base.button,
+  descriptionInput: base.descriptionInput,
+  primaryButton: {
+    ...base.primaryButton,
     backgroundColor: '#FC9E4F',
   },
-  buttonText: { ...base.buttonText, color: '#202C59' },
+  primaryButtonText: {
+    ...base.primaryButtonText,
+    color: '#202C59',
+  },
+  secondaryButton: {
+    ...base.secondaryButton,
+    backgroundColor: '#231F20',
+    borderColor: '#3D8FB3',
+  },
+  secondaryButtonText: {
+    ...base.secondaryButtonText,
+    color: '#F4FAFF',
+  },
 });
 
 const light = StyleSheet.create({
@@ -223,21 +276,43 @@ const light = StyleSheet.create({
   },
   card: {
     ...base.card,
-    backgroundColor: 'rgba(244, 250, 255, 0.94)',
+    backgroundColor: 'rgba(255,255,255,0.94)',
     borderColor: '#3D8FB3',
   },
-  title: { ...base.title, color: '#202C59' },
-  subtitle: { ...base.subtitle, color: '#202C59' },
+  title: {
+    ...base.title,
+    color: '#202C59',
+  },
+  subtitle: {
+    ...base.subtitle,
+    color: '#202C59',
+  },
+  label: {
+    ...base.label,
+    color: '#202C59',
+  },
   input: {
     ...base.input,
     color: '#202C59',
     backgroundColor: '#FFFFFF',
     borderColor: '#3D8FB3',
   },
-  bigInput: base.bigInput,
-  button: {
-    ...base.button,
+  descriptionInput: base.descriptionInput,
+  primaryButton: {
+    ...base.primaryButton,
     backgroundColor: '#FC9E4F',
   },
-  buttonText: { ...base.buttonText, color: '#202C59' },
+  primaryButtonText: {
+    ...base.primaryButtonText,
+    color: '#202C59',
+  },
+  secondaryButton: {
+    ...base.secondaryButton,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#3D8FB3',
+  },
+  secondaryButtonText: {
+    ...base.secondaryButtonText,
+    color: '#202C59',
+  },
 });
