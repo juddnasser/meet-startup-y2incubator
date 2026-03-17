@@ -117,8 +117,6 @@ async function deleteUserFromDB(userID) {
     return true;
 }
 
-export { SetupUserInDB, editUserInDB };
-
-// Match users using age and gender & job description and role
+export { SetupUserInDB, editUserInDB, enterSession };// Match users using age and gender & job description and role
 
 // P2P Chats and Group P2P CHATS
