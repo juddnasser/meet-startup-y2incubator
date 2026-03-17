@@ -18,6 +18,7 @@ const SUPPORT_TYPES = [
   'Other',
 ];
 
+
 export default function HomePage() {
   const mode = 0;
   const styles = mode === 0 ? dark : light;
