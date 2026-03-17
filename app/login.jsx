@@ -5,6 +5,7 @@ import {
   Alert,
   ImageBackground,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,33 +13,61 @@ import {
 } from 'react-native';
 import Header from './header';
 import { enterSession } from './backend/user';
+
 export default function LoginPage() {
   const mode = 0;
-  const styles = mode === 0 ? dark : light;
+  const isDark = mode === 0;
+  const styles = isDark ? dark : light;
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({
+    email: '',
+    password: '',
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  function updateField(key, value) {
+    setForm(function (prev) {
+      return {
+        email: key === 'email' ? value : prev.email,
+        password: key === 'password' ? value : prev.password,
+      };
+    });
+  }
 
   async function handleLogin() {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing details', 'Please enter email and password.');
+    if (!form.email.trim() || !form.password.trim()) {
+      Alert.alert('Missing details', 'Please fill your email and password.');
       return;
     }
 
     try {
-      setBusy(true);
+      setLoading(true);
+
       await enterSession({
-        email: email.trim(),
-        password,
+        email: form.email.trim(),
+        password: form.password,
       });
 
-      router.replace('/feed');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Login failed', 'Could not sign in.');
+      const userData = {
+        id: form.email.trim().toLowerCase(),
+        email: form.email.trim(),
+        name: form.email.trim().split('@')[0],
+        age: '',
+        description: '',
+        role: '',
+        pfp: '0',
+      };
+
+      router.replace({
+        pathname: '/home',
+        params: userData,
+      });
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Login failed', 'Wrong email or password.');
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
   }
 
@@ -46,176 +75,253 @@ export default function LoginPage() {
     <View style={{ flex: 1 }}>
       <ImageBackground
         source={{
-          uri:
-            mode === 0
-              ? 'https://static.vecteezy.com/system/resources/thumbnails/007/278/150/small_2x/dark-background-abstract-with-light-effect-vector.jpg'
-              : 'https://images.ctfassets.net/nnkxuzam4k38/5uWJWkeNbfKj1xCb0QYw4W/5f98c1cf50300f106e1027609733e4cb/white-triangle.jpg',
+          uri: isDark
+            ? 'https://static.vecteezy.com/system/resources/thumbnails/007/278/150/small_2x/dark-background-abstract-with-light-effect-vector.jpg'
+            : 'https://images.ctfassets.net/nnkxuzam4k38/5uWJWkeNbfKj1xCb0QYw4W/5f98c1cf50300f106e1027609733e4cb/white-triangle.jpg',
         }}
         style={styles.background}
         resizeMode="cover"
       >
-        <BlurView
-          intensity={40}
-          tint={mode === 0 ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
+        <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={styles.fill} />
         <View style={styles.overlay} />
         <Header mode={mode} />
 
-        <View style={styles.page}>
+        <ScrollView contentContainerStyle={styles.page}>
           <View style={styles.card}>
-            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.title}>Log in</Text>
             <Text style={styles.subtitle}>
-              Sign in and continue from where you left off.
+              Continue to your account and pick up where you left off.
             </Text>
 
+            <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
+              value={form.email}
+              onChangeText={function (value) {
+                updateField('email', value);
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
+              placeholder="name@example.com"
+              placeholderTextColor={isDark ? '#8FA3B7' : '#6A7C8F'}
+              style={styles.input}
             />
 
+            <Text style={styles.label}>Password</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
+              value={form.password}
+              onChangeText={function (value) {
+                updateField('password', value);
+              }}
               secureTextEntry
-              value={password}
-              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor={isDark ? '#8FA3B7' : '#6A7C8F'}
+              style={styles.input}
             />
 
             <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                pressed && styles.buttonPressed,
-              ]}
               onPress={handleLogin}
-              disabled={busy}
+              disabled={loading}
+              style={function ({ pressed }) {
+                return [styles.primaryButton, pressed ? styles.primaryButtonPressed : null];
+              }}
             >
-              <Text style={styles.buttonText}>
-                {busy ? 'Signing in...' : 'Login'}
+              <Text style={styles.primaryButtonText}>
+                {loading ? 'Logging in...' : 'Log in'}
               </Text>
             </Pressable>
 
-            <Pressable onPress={() => router.push('/signup')}>
-              <Text style={styles.link}>Need an account? Sign up</Text>
+            <Pressable
+              onPress={function () {
+                router.push('/signup');
+              }}
+            >
+              <Text style={styles.linkText}>Don&apos;t have an account? Sign up</Text>
             </Pressable>
           </View>
-        </View>
+        </ScrollView>
       </ImageBackground>
     </View>
   );
 }
 
-const base = {
-  background: { flex: 1, width: '100%', height: '100%' },
-  page: {
+const dark = StyleSheet.create({
+  fill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  background: {
     flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(35, 31, 32, 0.45)',
+  },
+  page: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingTop: 80,
+    paddingTop: 120,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
   },
   card: {
     width: '100%',
-    maxWidth: 480,
-    borderRadius: 20,
+    maxWidth: 560,
+    borderRadius: 22,
     borderWidth: 1,
-    padding: 26,
+    padding: 24,
+    backgroundColor: 'rgba(32, 44, 89, 0.9)',
+    borderColor: '#3D8FB3',
   },
   title: {
     fontSize: 34,
     fontWeight: '700',
     marginBottom: 8,
+    color: '#F4FAFF',
   },
   subtitle: {
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 22,
+    marginBottom: 20,
+    color: '#DEFFFE',
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 6,
+    color: '#F4FAFF',
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 15,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 16,
-    marginBottom: 14,
-  },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  buttonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.99 }],
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  link: {
-    textAlign: 'center',
-    marginTop: 18,
-    fontSize: 15,
-  },
-};
-
-const dark = StyleSheet.create({
-  ...base,
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(35, 31, 32, 0.45)',
-  },
-  card: {
-    ...base.card,
-    backgroundColor: 'rgba(32, 44, 89, 0.9)',
-    borderColor: '#3D8FB3',
-  },
-  title: { ...base.title, color: '#F4FAFF' },
-  subtitle: { ...base.subtitle, color: '#DEFFFE' },
-  input: {
-    ...base.input,
+    marginBottom: 8,
     color: '#F4FAFF',
     backgroundColor: '#231F20',
     borderColor: '#3D8FB3',
   },
-  button: {
-    ...base.button,
+  primaryButton: {
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 16,
     backgroundColor: '#FC9E4F',
   },
-  buttonText: { ...base.buttonText, color: '#202C59' },
-  link: { ...base.link, color: '#DEFFFE' },
+  primaryButtonPressed: {
+    opacity: 0.92,
+  },
+  primaryButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#202C59',
+  },
+  linkText: {
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 15,
+    color: '#DEFFFE',
+  },
 });
 
 const light = StyleSheet.create({
-  ...base,
+  fill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(244, 250, 255, 0.28)',
   },
+  page: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 120,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
   card: {
-    ...base.card,
-    backgroundColor: 'rgba(244, 250, 255, 0.94)',
+    width: '100%',
+    maxWidth: 560,
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 24,
+    backgroundColor: 'rgba(255,255,255,0.94)',
     borderColor: '#3D8FB3',
   },
-  title: { ...base.title, color: '#202C59' },
-  subtitle: { ...base.subtitle, color: '#202C59' },
+  title: {
+    fontSize: 34,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#202C59',
+  },
+  subtitle: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 20,
+    color: '#202C59',
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 6,
+    color: '#202C59',
+  },
   input: {
-    ...base.input,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 16,
+    marginBottom: 8,
     color: '#202C59',
     backgroundColor: '#FFFFFF',
     borderColor: '#3D8FB3',
   },
-  button: {
-    ...base.button,
+  primaryButton: {
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 16,
     backgroundColor: '#FC9E4F',
   },
-  buttonText: { ...base.buttonText, color: '#202C59' },
-  link: { ...base.link, color: '#202C59' },
+  primaryButtonPressed: {
+    opacity: 0.92,
+  },
+  primaryButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#202C59',
+  },
+  linkText: {
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 15,
+    color: '#202C59',
+  },
 });

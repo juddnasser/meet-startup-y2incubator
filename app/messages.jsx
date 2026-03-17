@@ -1,4 +1,5 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   ImageBackground,
   Pressable,
@@ -9,33 +10,57 @@ import {
 } from 'react-native';
 import Header from './header';
 
-const conversations = [
+const conversationsSeed = [
   {
-    id: 'user1',
-    name: 'Moshe',
-    topic: 'Mentorship',
-    preview: 'I can help you understand how to start learning programming.',
+    id: 'rivka',
+    name: 'Rivka Cohen',
+    topic: 'Emotional Support',
+    preview: 'I am here if you want to talk through what is happening.',
     unread: true,
   },
   {
-    id: 'user2',
-    name: 'Yael',
-    topic: 'Emotional Support',
-    preview: 'You can talk to me anytime if you feel stuck.',
+    id: 'daniel',
+    name: 'Daniel Levi',
+    topic: 'Professional Advice',
+    preview: 'Send me your CV and I will review it with you.',
     unread: false,
   },
   {
-    id: 'user3',
-    name: 'David',
-    topic: 'Career Help',
-    preview: 'Let’s figure out what direction works best for you.',
-    unread: true,
+    id: 'miriam',
+    name: 'Miriam Ezra',
+    topic: 'Mentorship',
+    preview: 'We can take this one step at a time and build a plan.',
+    unread: false,
   },
 ];
 
 export default function MessagesPage() {
+  const params = useLocalSearchParams();
   const mode = 0;
   const isDark = mode === 0;
+  const styles = isDark ? dark : light;
+
+  const [profile, setProfile] = useState({
+    id: '',
+    email: '',
+    name: '',
+    age: '',
+    description: '',
+    role: '',
+    pfp: '0',
+  });
+
+  useEffect(function () {
+    setProfile({
+      id: typeof params.id === 'string' ? params.id : '',
+      email: typeof params.email === 'string' ? params.email : '',
+      name: typeof params.name === 'string' ? params.name : '',
+      age: typeof params.age === 'string' ? params.age : '',
+      description: typeof params.description === 'string' ? params.description : '',
+      role: typeof params.role === 'string' ? params.role : '',
+      pfp: typeof params.pfp === 'string' ? params.pfp : '0',
+    });
+  }, [params]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -47,156 +72,92 @@ export default function MessagesPage() {
         }}
         style={styles.background}
       >
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: isDark
-              ? 'rgba(35,31,32,0.5)'
-              : 'rgba(255,255,255,0.4)',
-          }}
-        />
-
+        <View style={styles.overlay} />
         <Header mode={mode} />
 
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.top}>
-            <Text
-              style={{
-                fontSize: 32,
-                fontWeight: '700',
-                marginBottom: 8,
-                color: isDark ? '#F4FAFF' : '#202C59',
-              }}
-            >
-              Messages
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 15,
-                color: isDark ? '#DEFFFE' : '#202C59',
-              }}
-            >
+            <Text style={styles.pageTitle}>Messages</Text>
+            <Text style={styles.pageSubtitle}>
               Continue your conversations with people who support you.
             </Text>
           </View>
 
-          {conversations.map((item) => (
-            <Pressable
-              key={item.id}
-              onPress={() =>
-                router.push({
-                  pathname: '/backend/chats/[peerId]',
-                  params: { peerId: item.id, name: item.name },
-                })
-              }
-              style={({ pressed }) => [
-                styles.card,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(32,44,89,0.9)'
-                    : '#ffffff',
-                  borderColor: '#3D8FB3',
-                  opacity: pressed ? 0.9 : 1,
-                },
-              ]}
-            >
-              <View
-                style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: 18,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 12,
-                  backgroundColor: isDark ? '#231F20' : '#F4FAFF',
-                  borderWidth: 1,
-                  borderColor: '#3D8FB3',
+          {conversationsSeed.map(function (item) {
+            return (
+              <Pressable
+                key={item.id}
+                onPress={function () {
+                  router.push({
+                    pathname: 'backend/chats/[peerId]',
+                    params: {
+                      peerId: item.id,
+                      name: item.name,
+                      topic: item.topic,
+                      myId: profile.id,
+                      myName: profile.name,
+                      myEmail: profile.email,
+                    },
+                  });
+                }}
+                style={function ({ pressed }) {
+                  return [styles.card, pressed ? styles.cardPressed : null];
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 22,
-                    fontWeight: '700',
-                    color: isDark ? '#FC9E4F' : '#202C59',
-                  }}
-                >
-                  {item.name[0]}
-                </Text>
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <View style={styles.rowTop}>
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: '700',
-                      color: isDark ? '#F4FAFF' : '#202C59',
-                    }}
-                  >
-                    {item.name}
-                  </Text>
-
-                  {item.unread && (
-                    <View
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 10,
-                        backgroundColor: '#FC9E4F',
-                      }}
-                    />
-                  )}
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{item.name[0]}</Text>
                 </View>
 
-                <Text
-                  style={{
-                    fontSize: 13,
-                    marginBottom: 6,
-                    color: isDark ? '#DEFFFE' : '#3D8FB3',
-                  }}
-                >
-                  {item.topic}
-                </Text>
+                <View style={styles.cardBody}>
+                  <View style={styles.rowTop}>
+                    <Text style={styles.cardTitle}>{item.name}</Text>
+                    {item.unread ? <View style={styles.unreadDot} /> : null}
+                  </View>
 
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: isDark ? '#F4FAFF' : '#202C59',
-                  }}
-                >
-                  {item.preview}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
+                  <Text style={styles.cardTopic}>{item.topic}</Text>
+                  <Text style={styles.cardPreview}>{item.preview}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </ImageBackground>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const dark = StyleSheet.create({
   background: {
     flex: 1,
     width: '100%',
     height: '100%',
   },
-
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(35,31,32,0.5)',
+  },
   container: {
     paddingTop: 120,
     paddingBottom: 40,
     paddingHorizontal: 20,
   },
-
   top: {
     marginBottom: 20,
   },
-
+  pageTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#F4FAFF',
+  },
+  pageSubtitle: {
+    fontSize: 15,
+    color: '#DEFFFE',
+  },
   card: {
     flexDirection: 'row',
     padding: 14,
@@ -204,11 +165,145 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 12,
     alignItems: 'center',
+    backgroundColor: 'rgba(32,44,89,0.9)',
+    borderColor: '#3D8FB3',
   },
-
+  cardPressed: {
+    opacity: 0.9,
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: '#231F20',
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FC9E4F',
+  },
+  cardBody: {
+    flex: 1,
+  },
   rowTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#F4FAFF',
+  },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 10,
+    backgroundColor: '#FC9E4F',
+  },
+  cardTopic: {
+    fontSize: 13,
+    marginBottom: 6,
+    color: '#DEFFFE',
+  },
+  cardPreview: {
+    fontSize: 14,
+    color: '#F4FAFF',
+  },
+});
+
+const light = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  container: {
+    paddingTop: 120,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  top: {
+    marginBottom: 20,
+  },
+  pageTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#202C59',
+  },
+  pageSubtitle: {
+    fontSize: 15,
+    color: '#202C59',
+  },
+  card: {
+    flexDirection: 'row',
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 12,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#3D8FB3',
+  },
+  cardPressed: {
+    opacity: 0.9,
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: '#F4FAFF',
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#202C59',
+  },
+  cardBody: {
+    flex: 1,
+  },
+  rowTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#202C59',
+  },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 10,
+    backgroundColor: '#FC9E4F',
+  },
+  cardTopic: {
+    fontSize: 13,
+    marginBottom: 6,
+    color: '#3D8FB3',
+  },
+  cardPreview: {
+    fontSize: 14,
+    color: '#202C59',
   },
 });
