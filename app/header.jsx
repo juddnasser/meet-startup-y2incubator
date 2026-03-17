@@ -1,319 +1,304 @@
 import { FontAwesome5 } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, usePathname } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
+const NAV_ITEMS = [
+  { label: 'Home', href: '/' },
+  { label: 'Feed', href: '/feed' },
+  { label: 'Messages', href: '/messages' },
+  { label: 'Profile', href: '/profile' },
+  { label: 'Chatbot', href: '/chatbot' },
+  { label: 'Login', href: '/login' },
+  { label: 'Sign up', href: '/signup' },
+];
+
 export default function Header({ mode = 0 }) {
-  const stylesHeader = [stylesHeaderDark, stylesHeaderLight];
-  const styles = stylesHeader[mode];
-
+  const pathname = usePathname();
+  const styles = mode === 0 ? dark : light;
   const [menuOpen, setMenuOpen] = useState(false);
-  const [conferenceOpen, setConferenceOpen] = useState(false);
 
-  useEffect(() => {
-    if (!menuOpen) {
-      setConferenceOpen(false);
-    }
-  }, [menuOpen]);
+  const isCompact = useMemo(
+    () => pathname?.startsWith('/chat/'),
+    [pathname]
+  );
+
+  function goTo(path) {
+    setMenuOpen(false);
+    router.push(path);
+  }
 
   return (
-    <View style={styles.topBar}>
-      <Pressable onPress={() => router.push('/')} style={styles.logoContainer}>
-        <View style={styles.logoBackground}>
+    <View style={[styles.wrap, isCompact && styles.wrapCompact]}>
+      <Pressable onPress={() => goTo('/')} style={styles.brand}>
+        <View style={styles.logoShell}>
           <Image
             source={require('../assets/images/HidushLogo.png')}
             style={styles.logo}
           />
         </View>
 
-        <View style={styles.titleWrapper}>
-          <Text style={styles.schoolText}>Hidush</Text>
+        <View>
+          <Text style={styles.brandText}>Hidush</Text>
+          {!isCompact ? (
+            <Text style={styles.brandSubText}>A wider path forward</Text>
+          ) : null}
         </View>
       </Pressable>
 
-      <View
-        style={styles.menuContainer}
-        onMouseLeave={() => {
-          setMenuOpen(false);
-        }}
-      >
+      <View style={styles.rightSide}>
+        {!isCompact ? (
+          <View style={styles.desktopNav}>
+            {NAV_ITEMS.slice(0, 5).map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Pressable
+                  key={item.href}
+                  onPress={() => goTo(item.href)}
+                  style={[
+                    styles.desktopLink,
+                    active && styles.desktopLinkActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.desktopLinkText,
+                      active && styles.desktopLinkTextActive,
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+
         <Pressable
           onPress={() => setMenuOpen((prev) => !prev)}
-          style={styles.menuLogo}
+          style={styles.menuButton}
         >
-          <FontAwesome5 name="bars" size={36} color={styles.icon.color} />
+          <FontAwesome5
+            name={menuOpen ? 'times' : 'bars'}
+            size={22}
+            color={mode === 0 ? '#F4FAFF' : '#202C59'}
+          />
         </Pressable>
 
-        {menuOpen && (
+        {menuOpen ? (
           <View style={styles.dropdown}>
-            <MenuItem
-              title="Home"
-              icon="home"
-              onPress={() => router.push('/')}
-              styles={styles}
-            />
-
-            <Pressable
-              onPress={() => setConferenceOpen((prev) => !prev)}
-              style={styles.menuItem}
-            >
-              <View style={styles.menuRow}>
-                <View style={styles.menuLeft}>
-                  <FontAwesome5
-                    name="university"
-                    size={16}
-                    color={styles.icon.color}
-                  />
-                  <Text style={styles.menuText}>Menu</Text>
-                </View>
-
-                <FontAwesome5
-                  name={conferenceOpen ? 'chevron-down' : 'chevron-right'}
-                  size={12}
-                  color={styles.icon.color}
-                />
-              </View>
-            </Pressable>
-
-            {conferenceOpen && (
-              <View style={styles.subMenu}>
-                <SubMenuItem
-                  title="Chatbot"
-                  onPress={() => router.push('/chatbot')}
-                  styles={styles}
-                />
-                <SubMenuItem
-                  title="Temp-Pg2"
-                  onPress={() => router.push('/pg2')}
-                  styles={styles}
-                />
-              </View>
-            )}
+            {NAV_ITEMS.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Pressable
+                  key={item.href}
+                  onPress={() => goTo(item.href)}
+                  style={[styles.menuItem, active && styles.menuItemActive]}
+                >
+                  <Text
+                    style={[styles.menuText, active && styles.menuTextActive]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-        )}
+        ) : null}
       </View>
     </View>
   );
 }
 
-const MenuItem = ({ title, icon, onPress, styles }) => (
-  <Pressable style={styles.menuItem} onPress={onPress}>
-    <View style={styles.menuLeft}>
-      <FontAwesome5 name={icon} size={16} color={styles.icon.color} />
-      <Text style={styles.menuText}>{title}</Text>
-    </View>
-  </Pressable>
-);
-
-const SubMenuItem = ({ title, onPress, styles }) => (
-  <Pressable style={styles.subMenuItem} onPress={onPress}>
-    <Text style={styles.subMenuText}>{title}</Text>
-  </Pressable>
-);
-
-export const stylesHeaderDark = StyleSheet.create({
-  topBar: {
+const base = {
+  wrap: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 9999,
+    zIndex: 50,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 45,
-    paddingHorizontal: 25,
+    paddingTop: 42,
+    paddingHorizontal: 20,
   },
-
-  logoContainer: {
+  wrapCompact: {
+    paddingTop: 34,
+  },
+  brand: {
     flexDirection: 'row',
     alignItems: 'center',
+    maxWidth: '70%',
   },
-
-  logoBackground: {
-    padding: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
+  logoShell: {
+    marginRight: 12,
   },
-
   logo: {
-    width: 90,
-    height: 90,
+    width: 72,
+    height: 72,
     resizeMode: 'contain',
   },
-
-  titleWrapper: {
-    paddingLeft: 15,
+  brandText: {
+    fontSize: 31,
+    fontWeight: '800',
   },
-
-  schoolText: {
-    fontFamily: 'Times New Roman',
-    fontSize: 35,
-    color: '#F4FAFF',
-    fontWeight: 'bold',
+  brandSubText: {
+    fontSize: 13,
+    marginTop: 2,
   },
-
-  menuContainer: {
+  rightSide: {
     position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-
-  menuLogo: {
-    padding: 10,
+  desktopNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
   },
-
+  desktopLink: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginRight: 6,
+  },
+  desktopLinkActive: {},
+  desktopLinkText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  desktopLinkTextActive: {},
+  menuButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dropdown: {
     position: 'absolute',
-    top: 50,
+    top: 56,
     right: 0,
-    width: 280,
-    backgroundColor: 'rgba(32, 44, 89, 0.95)',
-    borderRadius: 12,
-    paddingVertical: 10,
+    width: 190,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 8,
+  },
+  menuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
+  menuItemActive: {},
+  menuText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  menuTextActive: {},
+};
+
+const dark = StyleSheet.create({
+  ...base,
+  brandText: {
+    ...base.brandText,
+    color: '#F4FAFF',
+  },
+  brandSubText: {
+    ...base.brandSubText,
+    color: '#DEFFFE',
+  },
+  desktopLink: {
+    ...base.desktopLink,
+    backgroundColor: 'rgba(32, 44, 89, 0.52)',
+  },
+  desktopLinkActive: {
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+    backgroundColor: 'rgba(32, 44, 89, 0.9)',
+  },
+  desktopLinkText: {
+    ...base.desktopLinkText,
+    color: '#F4FAFF',
+  },
+  desktopLinkTextActive: {
+    color: '#FC9E4F',
+  },
+  menuButton: {
+    ...base.menuButton,
+    backgroundColor: 'rgba(32, 44, 89, 0.9)',
     borderWidth: 1,
     borderColor: '#3D8FB3',
   },
-
+  dropdown: {
+    ...base.dropdown,
+    backgroundColor: 'rgba(32, 44, 89, 0.97)',
+    borderColor: '#3D8FB3',
+  },
   menuItem: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    ...base.menuItem,
   },
-
-  menuRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  menuItemActive: {
+    backgroundColor: 'rgba(252, 158, 79, 0.12)',
   },
-
-  menuLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
   menuText: {
+    ...base.menuText,
     color: '#F4FAFF',
-    fontSize: 16,
-    marginLeft: 12,
   },
-
-  subMenu: {
-    paddingLeft: 40,
-    backgroundColor: 'rgba(61, 143, 179, 0.12)',
-  },
-
-  subMenuItem: {
-    paddingVertical: 10,
-  },
-
-  subMenuText: {
-    color: '#DEFFFE',
-    fontSize: 15,
-    opacity: 0.9,
-  },
-
-  icon: {
+  menuTextActive: {
     color: '#FC9E4F',
   },
 });
 
-export const stylesHeaderLight = StyleSheet.create({
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 9999,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 45,
-    paddingHorizontal: 25,
-  },
-
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  logoBackground: {
-    padding: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
-
-  logo: {
-    width: 90,
-    height: 90,
-    resizeMode: 'contain',
-  },
-
-  titleWrapper: {
-    paddingLeft: 15,
-  },
-
-  schoolText: {
-    fontFamily: 'Times New Roman',
-    fontSize: 35,
+const light = StyleSheet.create({
+  ...base,
+  brandText: {
+    ...base.brandText,
     color: '#202C59',
-    fontWeight: 'bold',
   },
-
-  menuContainer: {
-    position: 'relative',
+  brandSubText: {
+    ...base.brandSubText,
+    color: '#202C59',
   },
-
-  menuLogo: {
-    padding: 10,
+  desktopLink: {
+    ...base.desktopLink,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(61, 143, 179, 0.3)',
   },
-
-  dropdown: {
-    position: 'absolute',
-    top: 50,
-    right: 0,
-    width: 280,
-    backgroundColor: '#F4FAFF',
-    borderRadius: 12,
-    paddingVertical: 10,
+  desktopLinkActive: {
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+    backgroundColor: '#FFFFFF',
+  },
+  desktopLinkText: {
+    ...base.desktopLinkText,
+    color: '#202C59',
+  },
+  desktopLinkTextActive: {
+    color: '#3D8FB3',
+  },
+  menuButton: {
+    ...base.menuButton,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
     borderColor: '#3D8FB3',
   },
-
+  dropdown: {
+    ...base.dropdown,
+    backgroundColor: 'rgba(255,255,255,0.98)',
+    borderColor: '#3D8FB3',
+  },
   menuItem: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    ...base.menuItem,
   },
-
-  menuRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  menuItemActive: {
+    backgroundColor: 'rgba(61, 143, 179, 0.08)',
   },
-
-  menuLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
   menuText: {
+    ...base.menuText,
     color: '#202C59',
-    fontSize: 16,
-    marginLeft: 12,
   },
-
-  subMenu: {
-    paddingLeft: 40,
-    backgroundColor: 'rgba(61, 143, 179, 0.10)',
-  },
-
-  subMenuItem: {
-    paddingVertical: 10,
-  },
-
-  subMenuText: {
+  menuTextActive: {
     color: '#3D8FB3',
-    fontSize: 15,
-  },
-
-  icon: {
-    color: '#FC9E4F',
   },
 });

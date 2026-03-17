@@ -1,210 +1,466 @@
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import Header from './header';
 
-export default homePge
+const TEAM_MEMBERS = [
+  { name: 'Shalva', description: 'Project lead' },
+  { name: 'Maya', description: 'User experience' },
+  { name: 'Noor', description: 'Interface design' },
+  { name: 'Joud', description: 'Backend development' },
+  { name: 'Nadav', description: 'Frontend development' },
+];
 
-function homePge() {
-  let mode = 0; //changes between dark and light; 0 or 1
-  let stylesMain = [stylesMainDark, stylesMainLight];
-  let imgSRC = ["https://static.vecteezy.com/system/resources/thumbnails/007/278/150/small_2x/dark-background-abstract-with-light-effect-vector.jpg", "https://images.ctfassets.net/nnkxuzam4k38/5uWJWkeNbfKj1xCb0QYw4W/5f98c1cf50300f106e1027609733e4cb/white-triangle.jpg"]
-  const TEAM_MEMBERS = [{
-    name: "Shalva",
-    description: "PM"
-  }, {
-    name: "Maya",
-    description: "UX"
-  }, {
-    name: "Noor",
-    description: "UI"
-  }, {
-    name: "Joud",
-    description: "Backend Developer"
-  }, {
-    name: "Nadav",
-    description: "Frontend Developer"
-  }]
-  const TEAM_ROWS = [
-    TEAM_MEMBERS.slice(0,3), // First row
-    TEAM_MEMBERS.slice(3)     // Second row
-  ];
+export default function HomePage() {
+  const mode = 0;
+  const styles = mode === 0 ? dark : light;
+
+  const imageUri =
+    mode === 0
+      ? 'https://static.vecteezy.com/system/resources/thumbnails/007/278/150/small_2x/dark-background-abstract-with-light-effect-vector.jpg'
+      : 'https://images.ctfassets.net/nnkxuzam4k38/5uWJWkeNbfKj1xCb0QYw4W/5f98c1cf50300f106e1027609733e4cb/white-triangle.jpg';
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
       <ImageBackground
-        source={imgSRC[mode]}
-        style={stylesMain[mode].background}
+        source={{ uri: imageUri }}
+        style={styles.hero}
         resizeMode="cover"
       >
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={stylesMain[mode].overlay} />
+        <BlurView
+          intensity={40}
+          tint={mode === 0 ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.overlay} />
         <Header mode={mode} />
 
-        {/* Main text and buttons */}
-        <View style={stylesMain[mode].mainTextBlock}>
-          <Text style={stylesMain[mode].mainText}>Hidush</Text>
-          <View style={stylesMain[mode].secondaryTextBlock}>
-            <Pressable
-              style={({ pressed }) => [
-                stylesMain[mode].menuItem,
-                pressed && stylesMain[mode].menuItemPressed,
-              ]}
-              onPress={() => router.push('/chatbot')}
-            >
-              <Text style={stylesMain[mode].menuText}>Chatbot</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                stylesMain[mode].menuItem,
-                pressed && stylesMain[mode].menuItemPressed,
-              ]}
-              onPress={() => router.push('/')}
-            >
-              <Text style={stylesMain[mode].menuText}>another PG</Text>
-            </Pressable>
+        <View style={styles.heroInner}>
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroTitle}>Hidush</Text>
+            <Text style={styles.heroSubtitle}>
+              Support, guidance, and real tools for people who want to build a
+              wider future.
+            </Text>
+
+            <View style={styles.heroActions}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && styles.primaryButtonPressed,
+                ]}
+                onPress={() => router.push('/signup')}
+              >
+                <Text style={styles.primaryButtonText}>Get started</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.secondaryButtonPressed,
+                ]}
+                onPress={() => router.push('/feed')}
+              >
+                <Text style={styles.secondaryButtonText}>Community feed</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.secondaryButtonPressed,
+                ]}
+                onPress={() => router.push('/chatbot')}
+              >
+                <Text style={styles.secondaryButtonText}>Chatbot</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </ImageBackground>
 
-      <View style={stylesMain[mode].textSection}>
-        {/* About */}
-        <Text style={stylesMain[mode].sectionTitle}>About Us</Text>
-        <Text style={stylesMain[mode].sectionText}>
-          {'\t'}'We are Hidush - Our app provides Haredim with the tools, support, and confidence to pursue new paths-whether in education, careers, or broader participation in society.
-Through personalized guidance, accessible information, and a supportive community, we help turn ambition into reality and build bridges between worlds.'
-        </Text>
-        <Text style={[stylesMain[mode].sectionTitle, { alignSelf: "center" }]}>---</Text>
-        {/* Team Section */}
-        <Text style={stylesMain[mode].sectionTitle}>Our Team</Text>
-        {TEAM_ROWS.map((row, rowIndex) => (
-          <View key={rowIndex} style={stylesMain[mode].teamRow}>
-            {row.map((member, index) => (
-              <Pressable onPress={() => { router.push({ pathname: '/team', params: { state: parseInt(index) } }) }} key={index} style={stylesMain[mode].teamMember}>
-                <View style={stylesMain[mode].teamPhoto} />
-                <Text style={stylesMain[mode].personName}>{member.name}</Text>
-                <Text style={stylesMain[mode].personText}>{member.description}</Text>
-              </Pressable>
+      <View style={styles.section}>
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>About us</Text>
+          <Text style={styles.sectionText}>
+            We are here to open doors. Hidush gives Haredim practical support,
+            access to guidance, and a place to take first steps toward
+            education, work, and broader participation in society. We want to
+            make the path feel less lonely and much more possible.
+          </Text>
+        </View>
+
+        <View style={styles.sectionDivider} />
+
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>What you can do here</Text>
+
+          <View style={styles.cardsRow}>
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>Build a profile</Text>
+              <Text style={styles.infoCardText}>
+                Share your goals, background, and what kind of support you are
+                looking for.
+              </Text>
+            </View>
+
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>Post in the feed</Text>
+              <Text style={styles.infoCardText}>
+                Ask questions, share experiences, and hear from people who have
+                already gone through similar steps.
+              </Text>
+            </View>
+
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>Talk directly</Text>
+              <Text style={styles.infoCardText}>
+                Use messages and the chatbot to get practical help and continue
+                conversations privately.
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionDivider} />
+
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>Our team</Text>
+
+          <View style={styles.teamGrid}>
+            {TEAM_MEMBERS.map((member) => (
+              <View key={member.name} style={styles.teamCard}>
+                <View style={styles.teamPhoto}>
+                  <Text style={styles.teamPhotoText}>{member.name[0]}</Text>
+                </View>
+                <Text style={styles.teamName}>{member.name}</Text>
+                <Text style={styles.teamRole}>{member.description}</Text>
+              </View>
             ))}
           </View>
-        ))}
-        <Text style={[stylesMain[mode].sectionTitle, { alignSelf: "center" }]}>---</Text>
-
+        </View>
       </View>
     </ScrollView>
-  )
+  );
 }
 
-const stylesMainDark = StyleSheet.create({
-  background: { flex: 1, width: '100%', height: '100%' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(35, 31, 32, 0.45)' },
-
-  mainTextBlock: { justifyContent: 'center', alignItems: 'flex-start', marginLeft: 200, paddingVertical: 350 },
-  mainText: { fontSize: 120, fontWeight: 'bold', color: '#F4FAFF', textAlign: 'left', marginBottom: 40, letterSpacing: 1 },
-  secondaryTextBlock: { flexDirection: 'row' },
-
-  menuItem: {
-    borderWidth: 1,
-    borderColor: '#3D8FB3',
-    borderRadius: 12,
-    paddingHorizontal: 28,
-    paddingVertical: 16,
-    marginRight: 24,
-    backgroundColor: 'rgba(32, 44, 89, 0.55)',
+const base = {
+  hero: {
+    minHeight: 760,
+    width: '100%',
   },
-  menuItemPressed: { backgroundColor: 'rgba(252, 158, 79, 0.22)' },
-  menuText: { color: '#F4FAFF', fontSize: 24, fontWeight: '500' },
+  heroInner: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingTop: 140,
+    paddingBottom: 120,
+    paddingHorizontal: 24,
+  },
+  heroCopy: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+  },
+  heroTitle: {
+    fontSize: 88,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 14,
+  },
+  heroSubtitle: {
+    fontSize: 22,
+    lineHeight: 34,
+    maxWidth: 680,
+    marginBottom: 28,
+  },
+  heroActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  primaryButton: {
+    borderRadius: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 16,
+  },
+  primaryButtonPressed: {
+    opacity: 0.92,
+  },
+  primaryButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 16,
+  },
+  secondaryButtonPressed: {
+    opacity: 0.92,
+  },
+  secondaryButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  section: {
+    paddingHorizontal: 22,
+    paddingTop: 34,
+    paddingBottom: 50,
+  },
+  sectionBlock: {
+    width: '100%',
+    maxWidth: 1080,
+    alignSelf: 'center',
+  },
+  sectionTitle: {
+    fontSize: 42,
+    fontWeight: '800',
+    marginBottom: 18,
+  },
+  sectionText: {
+    fontSize: 18,
+    lineHeight: 31,
+    maxWidth: 920,
+  },
+  sectionDivider: {
+    width: '100%',
+    maxWidth: 1080,
+    alignSelf: 'center',
+    height: 1,
+    marginVertical: 34,
+  },
+  cardsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  infoCard: {
+    flexGrow: 1,
+    flexBasis: 280,
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 20,
+    minHeight: 180,
+  },
+  infoCardTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  infoCardText: {
+    fontSize: 16,
+    lineHeight: 26,
+  },
+  teamGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 18,
+  },
+  teamCard: {
+    width: 190,
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 18,
+    alignItems: 'center',
+  },
+  teamPhoto: {
+    width: 84,
+    height: 84,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  teamPhotoText: {
+    fontSize: 30,
+    fontWeight: '800',
+  },
+  teamName: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  teamRole: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+};
 
-  textSection: {
-    paddingTop: 200,
-    paddingHorizontal: 200,
-    paddingBottom: 100,
+const dark = StyleSheet.create({
+  ...base,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(35, 31, 32, 0.45)',
+  },
+  heroTitle: {
+    ...base.heroTitle,
+    color: '#F4FAFF',
+  },
+  heroSubtitle: {
+    ...base.heroSubtitle,
+    color: '#DEFFFE',
+  },
+  primaryButton: {
+    ...base.primaryButton,
+    backgroundColor: '#FC9E4F',
+  },
+  primaryButtonText: {
+    ...base.primaryButtonText,
+    color: '#202C59',
+  },
+  secondaryButton: {
+    ...base.secondaryButton,
+    backgroundColor: 'rgba(32, 44, 89, 0.58)',
+    borderColor: '#3D8FB3',
+  },
+  secondaryButtonText: {
+    ...base.secondaryButtonText,
+    color: '#F4FAFF',
+  },
+  section: {
+    ...base.section,
     backgroundColor: '#231F20',
   },
-  sectionTitle: { fontSize: 100, fontWeight: 'bold', color: '#F4FAFF', textAlign: 'left', marginBottom: 40 },
-  sectionText: { fontSize: 24, lineHeight: 36, color: '#DEFFFE', textAlign: 'left', marginBottom: 60 },
-
-  teamRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', marginBottom: 60 },
-  teamMember: { width: 250, marginBottom: 40, marginHorizontal: 40, marginTop: 10, alignItems: 'center' },
+  sectionTitle: {
+    ...base.sectionTitle,
+    color: '#F4FAFF',
+  },
+  sectionText: {
+    ...base.sectionText,
+    color: '#DEFFFE',
+  },
+  sectionDivider: {
+    ...base.sectionDivider,
+    backgroundColor: 'rgba(61, 143, 179, 0.45)',
+  },
+  infoCard: {
+    ...base.infoCard,
+    backgroundColor: 'rgba(32, 44, 89, 0.88)',
+    borderColor: '#3D8FB3',
+  },
+  infoCardTitle: {
+    ...base.infoCardTitle,
+    color: '#F4FAFF',
+  },
+  infoCardText: {
+    ...base.infoCardText,
+    color: '#DEFFFE',
+  },
+  teamCard: {
+    ...base.teamCard,
+    backgroundColor: 'rgba(32, 44, 89, 0.88)',
+    borderColor: '#3D8FB3',
+  },
   teamPhoto: {
-    width: 250,
-    height: 250,
-    borderRadius: 50,
-    backgroundColor: '#202C59',
-    marginBottom: 16,
+    ...base.teamPhoto,
+    backgroundColor: '#231F20',
     borderWidth: 1,
     borderColor: '#3D8FB3',
   },
-  personName: { fontSize: 32, fontWeight: 'bold', color: '#F4FAFF', marginBottom: 8, textAlign: 'center' },
-  personText: { fontSize: 20, color: '#DEFFFE', lineHeight: 28, textAlign: 'center' },
-
-  faqItem: {
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#3D8FB3',
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#202C59',
+  teamPhotoText: {
+    ...base.teamPhotoText,
+    color: '#FC9E4F',
   },
-  faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  faqQuestion: { fontSize: 24, fontWeight: 'bold', color: '#F4FAFF' },
-  faqDivider: { height: 1, backgroundColor: '#3D8FB3', marginHorizontal: 16 },
-  faqAnswer: { fontSize: 20, color: '#DEFFFE', padding: 16 },
+  teamName: {
+    ...base.teamName,
+    color: '#F4FAFF',
+  },
+  teamRole: {
+    ...base.teamRole,
+    color: '#DEFFFE',
+  },
 });
 
-const stylesMainLight = StyleSheet.create({
-  background: { flex: 1, width: '100%', height: '100%' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 250, 255, 0.25)' },
-
-  mainTextBlock: { justifyContent: 'center', alignItems: 'flex-start', marginLeft: 200, paddingVertical: 350 },
-  mainText: { fontSize: 120, fontWeight: 'bold', color: '#202C59', textAlign: 'left', marginBottom: 40, letterSpacing: 1 },
-  secondaryTextBlock: { flexDirection: 'row' },
-
-  menuItem: {
-    borderWidth: 1,
-    borderColor: '#202C59',
-    borderRadius: 12,
-    paddingHorizontal: 28,
-    paddingVertical: 16,
-    marginRight: 24,
-    backgroundColor: 'rgba(222, 255, 254, 0.75)',
+const light = StyleSheet.create({
+  ...base,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(244, 250, 255, 0.28)',
   },
-  menuItemPressed: { backgroundColor: 'rgba(252, 158, 79, 0.18)' },
-  menuText: { color: '#202C59', fontSize: 24, fontWeight: '500' },
-
-  textSection: {
-    paddingTop: 200,
-    paddingHorizontal: 200,
-    paddingBottom: 100,
+  heroTitle: {
+    ...base.heroTitle,
+    color: '#202C59',
+  },
+  heroSubtitle: {
+    ...base.heroSubtitle,
+    color: '#202C59',
+  },
+  primaryButton: {
+    ...base.primaryButton,
+    backgroundColor: '#FC9E4F',
+  },
+  primaryButtonText: {
+    ...base.primaryButtonText,
+    color: '#202C59',
+  },
+  secondaryButton: {
+    ...base.secondaryButton,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderColor: '#3D8FB3',
+  },
+  secondaryButtonText: {
+    ...base.secondaryButtonText,
+    color: '#202C59',
+  },
+  section: {
+    ...base.section,
     backgroundColor: '#F4FAFF',
   },
-  sectionTitle: { fontSize: 100, fontWeight: 'bold', color: '#202C59', textAlign: 'left', marginBottom: 40 },
-  sectionText: { fontSize: 24, lineHeight: 36, color: '#3D8FB3', textAlign: 'left', marginBottom: 60 },
-
-  teamRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', marginBottom: 60 },
-  teamMember: { width: 250, marginBottom: 40, marginHorizontal: 40, marginTop: 10, alignItems: 'center' },
-  teamPhoto: {
-    width: 250,
-    height: 250,
-    borderRadius: 50,
-    backgroundColor: '#DEFFFE',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#3D8FB3',
+  sectionTitle: {
+    ...base.sectionTitle,
+    color: '#202C59',
   },
-  personName: { fontSize: 32, fontWeight: 'bold', color: '#202C59', marginBottom: 8, textAlign: 'center' },
-  personText: { fontSize: 20, color: '#3D8FB3', lineHeight: 28, textAlign: 'center' },
-
-  faqItem: {
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#3D8FB3',
-    borderRadius: 12,
-    overflow: 'hidden',
+  sectionText: {
+    ...base.sectionText,
+    color: '#202C59',
+  },
+  sectionDivider: {
+    ...base.sectionDivider,
+    backgroundColor: 'rgba(61, 143, 179, 0.35)',
+  },
+  infoCard: {
+    ...base.infoCard,
     backgroundColor: '#FFFFFF',
+    borderColor: '#3D8FB3',
   },
-  faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  faqQuestion: { fontSize: 24, fontWeight: 'bold', color: '#202C59' },
-  faqDivider: { height: 1, backgroundColor: '#DEFFFE', marginHorizontal: 16 },
-  faqAnswer: { fontSize: 20, color: '#3D8FB3', padding: 16 },
+  infoCardTitle: {
+    ...base.infoCardTitle,
+    color: '#202C59',
+  },
+  infoCardText: {
+    ...base.infoCardText,
+    color: '#202C59',
+  },
+  teamCard: {
+    ...base.teamCard,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#3D8FB3',
+  },
+  teamPhoto: {
+    ...base.teamPhoto,
+    backgroundColor: '#F4FAFF',
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+  },
+  teamPhotoText: {
+    ...base.teamPhotoText,
+    color: '#202C59',
+  },
+  teamName: {
+    ...base.teamName,
+    color: '#202C59',
+  },
+  teamRole: {
+    ...base.teamRole,
+    color: '#3D8FB3',
+  },
 });

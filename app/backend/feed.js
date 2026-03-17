@@ -1,44 +1,41 @@
-import { account, tablesDB } from './appwrite.js';
-
-const apiKey = process.env.DB_APIKEY;
-const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-
-import { Client, Account, ID } from "appwrite";
+import { tablesDB } from './appwrite.js';
+import { ID } from 'appwrite';
 
 async function createPost(post, userId) {
-
-    const promise = tablesDB.createRow({
-        databaseId: 'main',
-        tableId: 'posts',
-        rowId: ID.unique(),
-        data: {
-            title: post.title,
-            content: post.content,
-            authorId: userId
-        }
+  try {
+    const response = await tablesDB.createRow({
+      databaseId: 'main',
+      tableId: 'posts',
+      rowId: ID.unique(),
+      data: {
+        title: post.title,
+        content: post.content,
+        authorId: userId,
+      },
     });
-    promise.then(function (response) {
-        console.log(response);
-    }
-        , function (error) {
-            console.log(error);
-            return false;
-        });
-    return true;
+
+    console.log('Post created:', response);
+    return response; // return real data
+  } catch (error) {
+    console.error('Create post error:', error);
+    return null;
+  }
 }
 
-async function deletePost(postID, userID) {
+async function deletePost(postID) {
+  try {
+    const response = await tablesDB.deleteRow({
+      databaseId: 'main',
+      tableId: 'posts',
+      rowId: postID,
+    });
 
-    const promise = tablesDB.deleteRow({
-        databaseId: 'main',
-        tableId: 'posts',
-        rowId: postID
-    });
-    promise.then(function (response) {
-        console.log(response);
-    }, function (error) {
-        console.log(error);
-        return false;
-    });
+    console.log('Post deleted:', response);
     return true;
+  } catch (error) {
+    console.error('Delete post error:', error);
+    return false;
+  }
 }
+
+export { createPost, deletePost };
