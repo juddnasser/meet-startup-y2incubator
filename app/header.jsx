@@ -1,16 +1,14 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/' },
-  { label: 'Feed', href: '/feed' },
+  { label: 'Log In', href: '/login' },
+  { label: 'Sign Up', href: '/signup' },
   { label: 'Messages', href: '/messages' },
   { label: 'Profile', href: '/profile' },
-  { label: 'Chatbot', href: '/chatbot' },
-  { label: 'Login', href: '/login' },
-  { label: 'Sign up', href: '/signup' },
 ];
 
 export default function Header({ mode = 0 }) {
@@ -18,61 +16,46 @@ export default function Header({ mode = 0 }) {
   const styles = mode === 0 ? dark : light;
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isCompact = useMemo(
-    () => pathname?.startsWith('/chat/'),
-    [pathname]
-  );
-
   function goTo(path) {
     setMenuOpen(false);
     router.push(path);
   }
 
   return (
-    <View style={[styles.wrap, isCompact && styles.wrapCompact]}>
+    <View style={styles.wrap}>
       <Pressable onPress={() => goTo('/')} style={styles.brand}>
-        <View style={styles.logoShell}>
-          <Image
-            source={require('../assets/images/HidushLogo.png')}
-            style={styles.logo}
-          />
+        <View style={styles.logoFallback}>
+          <Text style={styles.logoFallbackText}>H</Text>
         </View>
 
         <View>
           <Text style={styles.brandText}>Hidush</Text>
-          {!isCompact ? (
-            <Text style={styles.brandSubText}>A wider path forward</Text>
-          ) : null}
+          <Text style={styles.brandSubText}>Support that opens doors</Text>
         </View>
       </Pressable>
 
       <View style={styles.rightSide}>
-        {!isCompact ? (
-          <View style={styles.desktopNav}>
-            {NAV_ITEMS.slice(0, 5).map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Pressable
-                  key={item.href}
-                  onPress={() => goTo(item.href)}
+        <View style={styles.desktopNav}>
+          {NAV_ITEMS.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Pressable
+                key={item.href}
+                onPress={() => goTo(item.href)}
+                style={[styles.desktopLink, active && styles.desktopLinkActive]}
+              >
+                <Text
                   style={[
-                    styles.desktopLink,
-                    active && styles.desktopLinkActive,
+                    styles.desktopLinkText,
+                    active && styles.desktopLinkTextActive,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.desktopLinkText,
-                      active && styles.desktopLinkTextActive,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : null}
+                  {item.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <Pressable
           onPress={() => setMenuOpen((prev) => !prev)}
@@ -80,7 +63,7 @@ export default function Header({ mode = 0 }) {
         >
           <FontAwesome5
             name={menuOpen ? 'times' : 'bars'}
-            size={22}
+            size={20}
             color={mode === 0 ? '#F4FAFF' : '#202C59'}
           />
         </Pressable>
@@ -120,27 +103,28 @@ const base = {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 42,
+    paddingTop: 40,
     paddingHorizontal: 20,
-  },
-  wrapCompact: {
-    paddingTop: 34,
   },
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
     maxWidth: '70%',
   },
-  logoShell: {
+  logoFallback: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 12,
   },
-  logo: {
-    width: 72,
-    height: 72,
-    resizeMode: 'contain',
+  logoFallbackText: {
+    fontSize: 28,
+    fontWeight: '800',
   },
   brandText: {
-    fontSize: 31,
+    fontSize: 28,
     fontWeight: '800',
   },
   brandSubText: {
@@ -163,24 +147,22 @@ const base = {
     borderRadius: 12,
     marginRight: 6,
   },
-  desktopLinkActive: {},
   desktopLinkText: {
     fontSize: 15,
     fontWeight: '600',
   },
-  desktopLinkTextActive: {},
   menuButton: {
-    width: 46,
-    height: 46,
+    width: 44,
+    height: 44,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dropdown: {
     position: 'absolute',
-    top: 56,
+    top: 54,
     right: 0,
-    width: 190,
+    width: 180,
     borderRadius: 16,
     borderWidth: 1,
     paddingVertical: 8,
@@ -189,16 +171,24 @@ const base = {
     paddingHorizontal: 16,
     paddingVertical: 13,
   },
-  menuItemActive: {},
   menuText: {
     fontSize: 15,
     fontWeight: '600',
   },
-  menuTextActive: {},
 };
 
 const dark = StyleSheet.create({
   ...base,
+  logoFallback: {
+    ...base.logoFallback,
+    backgroundColor: '#231F20',
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+  },
+  logoFallbackText: {
+    ...base.logoFallbackText,
+    color: '#FC9E4F',
+  },
   brandText: {
     ...base.brandText,
     color: '#F4FAFF',
@@ -234,9 +224,6 @@ const dark = StyleSheet.create({
     backgroundColor: 'rgba(32, 44, 89, 0.97)',
     borderColor: '#3D8FB3',
   },
-  menuItem: {
-    ...base.menuItem,
-  },
   menuItemActive: {
     backgroundColor: 'rgba(252, 158, 79, 0.12)',
   },
@@ -251,6 +238,16 @@ const dark = StyleSheet.create({
 
 const light = StyleSheet.create({
   ...base,
+  logoFallback: {
+    ...base.logoFallback,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#3D8FB3',
+  },
+  logoFallbackText: {
+    ...base.logoFallbackText,
+    color: '#202C59',
+  },
   brandText: {
     ...base.brandText,
     color: '#202C59',
@@ -261,7 +258,7 @@ const light = StyleSheet.create({
   },
   desktopLink: {
     ...base.desktopLink,
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     borderWidth: 1,
     borderColor: 'rgba(61, 143, 179, 0.3)',
   },
@@ -287,9 +284,6 @@ const light = StyleSheet.create({
     ...base.dropdown,
     backgroundColor: 'rgba(255,255,255,0.98)',
     borderColor: '#3D8FB3',
-  },
-  menuItem: {
-    ...base.menuItem,
   },
   menuItemActive: {
     backgroundColor: 'rgba(61, 143, 179, 0.08)',

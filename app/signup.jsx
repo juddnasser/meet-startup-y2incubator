@@ -1,3 +1,4 @@
+// app/signup.jsx
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -14,6 +15,14 @@ import {
 import Header from './header';
 import { SetupUserInDB } from './backend/user';
 
+const SUPPORT_OPTIONS = [
+  'Financial Support',
+  'Emotional Support',
+  'Mentorship',
+  'Professional Advice',
+  'Other',
+];
+
 export default function SignupPage() {
   const mode = 0;
   const styles = mode === 0 ? dark : light;
@@ -23,14 +32,28 @@ export default function SignupPage() {
     email: '',
     password: '',
     age: '',
-    role: '',
     description: '',
+    communityType: 'Haredi',
+    supportDirection: 'I need support',
+    selectedSupports: [],
   });
 
   const [busy, setBusy] = useState(false);
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function toggleSupport(option) {
+    setForm((prev) => {
+      const exists = prev.selectedSupports.includes(option);
+      return {
+        ...prev,
+        selectedSupports: exists
+          ? prev.selectedSupports.filter((item) => item !== option)
+          : [...prev.selectedSupports, option],
+      };
+    });
   }
 
   async function handleSignup() {
@@ -42,12 +65,18 @@ export default function SignupPage() {
     try {
       setBusy(true);
 
+      const role = [
+        form.communityType,
+        form.supportDirection,
+        ...form.selectedSupports,
+      ].join(' | ');
+
       const ok = await SetupUserInDB({
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
         age: form.age ? Number(form.age) : null,
-        role: form.role.trim(),
+        role,
         description: form.description.trim(),
       });
 
@@ -55,7 +84,7 @@ export default function SignupPage() {
         throw new Error('Signup failed');
       }
 
-      router.replace('/feed');
+      router.replace('/home');
     } catch (err) {
       console.error(err);
       Alert.alert('Signup failed', 'Could not create the account.');
@@ -88,8 +117,31 @@ export default function SignupPage() {
           <View style={styles.card}>
             <Text style={styles.title}>Create your profile</Text>
             <Text style={styles.subtitle}>
-              Start with a few basic details. You can update them later.
+              Join Hidush and tell us what kind of support matters to you.
             </Text>
+
+            <Text style={styles.label}>You are</Text>
+            <View style={styles.chipRow}>
+              {['Haredi', 'Not Haredi'].map((option) => {
+                const active = form.communityType === option;
+                return (
+                  <Pressable
+                    key={option}
+                    style={[styles.chip, active ? styles.chipActive : null]}
+                    onPress={() => updateField('communityType', option)}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        active ? styles.chipTextActive : null,
+                      ]}
+                    >
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
             <TextInput
               style={styles.input}
@@ -128,14 +180,6 @@ export default function SignupPage() {
             />
 
             <TextInput
-              style={styles.input}
-              placeholder="Current role or goal"
-              placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
-              value={form.role}
-              onChangeText={(value) => updateField('role', value)}
-            />
-
-            <TextInput
               style={[styles.input, styles.bigInput]}
               placeholder="A few words about yourself"
               placeholderTextColor={mode === 0 ? '#94A3B8' : '#64748B'}
@@ -144,10 +188,64 @@ export default function SignupPage() {
               onChangeText={(value) => updateField('description', value)}
             />
 
+            <Text style={styles.label}>This account is for</Text>
+            <View style={styles.chipRow}>
+              {['I need support', 'I can offer support'].map((option) => {
+                const active = form.supportDirection === option;
+                return (
+                  <Pressable
+                    key={option}
+                    style={[styles.chip, active ? styles.chipActive : null]}
+                    onPress={() => updateField('supportDirection', option)}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        active ? styles.chipTextActive : null,
+                      ]}
+                    >
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.label}>
+              {form.supportDirection === 'I need support'
+                ? 'What kind of support do you need?'
+                : 'What support can you offer?'}
+            </Text>
+
+            <View style={styles.supportWrap}>
+              {SUPPORT_OPTIONS.map((option) => {
+                const active = form.selectedSupports.includes(option);
+                return (
+                  <Pressable
+                    key={option}
+                    style={[
+                      styles.supportChip,
+                      active ? styles.supportChipActive : null,
+                    ]}
+                    onPress={() => toggleSupport(option)}
+                  >
+                    <Text
+                      style={[
+                        styles.supportChipText,
+                        active ? styles.supportChipTextActive : null,
+                      ]}
+                    >
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             <Pressable
               style={({ pressed }) => [
                 styles.button,
-                pressed && styles.buttonPressed,
+                pressed ? styles.buttonPressed : null,
               ]}
               onPress={handleSignup}
               disabled={busy}
@@ -167,8 +265,16 @@ export default function SignupPage() {
   );
 }
 
-const base = {
-  background: { flex: 1, width: '100%', height: '100%' },
+const dark = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(35, 31, 32, 0.45)',
+  },
   page: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -179,20 +285,56 @@ const base = {
   },
   card: {
     width: '100%',
-    maxWidth: 560,
+    maxWidth: 640,
     borderRadius: 20,
     borderWidth: 1,
     padding: 26,
+    backgroundColor: 'rgba(32, 44, 89, 0.9)',
+    borderColor: '#3D8FB3',
   },
   title: {
     fontSize: 33,
     fontWeight: '700',
     marginBottom: 8,
+    color: '#F4FAFF',
   },
   subtitle: {
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 22,
+    color: '#DEFFFE',
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
+    color: '#F4FAFF',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+    gap: 10,
+  },
+  chip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    backgroundColor: '#231F20',
+    borderColor: '#3D8FB3',
+  },
+  chipActive: {
+    backgroundColor: '#FC9E4F',
+    borderColor: '#FC9E4F',
+  },
+  chipText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#F4FAFF',
+  },
+  chipTextActive: {
+    color: '#202C59',
   },
   input: {
     borderWidth: 1,
@@ -201,16 +343,46 @@ const base = {
     paddingVertical: 14,
     fontSize: 16,
     marginBottom: 14,
+    color: '#F4FAFF',
+    backgroundColor: '#231F20',
+    borderColor: '#3D8FB3',
   },
   bigInput: {
     minHeight: 110,
     textAlignVertical: 'top',
+  },
+  supportWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+    gap: 10,
+  },
+  supportChip: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    backgroundColor: '#231F20',
+    borderColor: '#3D8FB3',
+  },
+  supportChipActive: {
+    backgroundColor: 'rgba(252, 158, 79, 0.18)',
+    borderColor: '#FC9E4F',
+  },
+  supportChipText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#F4FAFF',
+  },
+  supportChipTextActive: {
+    color: '#FC9E4F',
   },
   button: {
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 6,
+    backgroundColor: '#FC9E4F',
   },
   buttonPressed: {
     opacity: 0.9,
@@ -218,66 +390,147 @@ const base = {
   buttonText: {
     fontSize: 17,
     fontWeight: '600',
+    color: '#202C59',
   },
   link: {
     textAlign: 'center',
     marginTop: 18,
     fontSize: 15,
+    color: '#DEFFFE',
   },
-};
-
-const dark = StyleSheet.create({
-  ...base,
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(35, 31, 32, 0.45)',
-  },
-  card: {
-    ...base.card,
-    backgroundColor: 'rgba(32, 44, 89, 0.9)',
-    borderColor: '#3D8FB3',
-  },
-  title: { ...base.title, color: '#F4FAFF' },
-  subtitle: { ...base.subtitle, color: '#DEFFFE' },
-  input: {
-    ...base.input,
-    color: '#F4FAFF',
-    backgroundColor: '#231F20',
-    borderColor: '#3D8FB3',
-  },
-  bigInput: base.bigInput,
-  button: {
-    ...base.button,
-    backgroundColor: '#FC9E4F',
-  },
-  buttonText: { ...base.buttonText, color: '#202C59' },
-  link: { ...base.link, color: '#DEFFFE' },
 });
 
 const light = StyleSheet.create({
-  ...base,
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(244, 250, 255, 0.28)',
   },
+  page: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 120,
+    paddingBottom: 36,
+  },
   card: {
-    ...base.card,
+    width: '100%',
+    maxWidth: 640,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 26,
     backgroundColor: 'rgba(244, 250, 255, 0.94)',
     borderColor: '#3D8FB3',
   },
-  title: { ...base.title, color: '#202C59' },
-  subtitle: { ...base.subtitle, color: '#202C59' },
+  title: {
+    fontSize: 33,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#202C59',
+  },
+  subtitle: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 22,
+    color: '#202C59',
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
+    color: '#202C59',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+    gap: 10,
+  },
+  chip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#3D8FB3',
+  },
+  chipActive: {
+    backgroundColor: '#FC9E4F',
+    borderColor: '#FC9E4F',
+  },
+  chipText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#202C59',
+  },
+  chipTextActive: {
+    color: '#202C59',
+  },
   input: {
-    ...base.input,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 14,
+    fontSize: 16,
+    marginBottom: 14,
     color: '#202C59',
     backgroundColor: '#FFFFFF',
     borderColor: '#3D8FB3',
   },
-  bigInput: base.bigInput,
+  bigInput: {
+    minHeight: 110,
+    textAlignVertical: 'top',
+  },
+  supportWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+    gap: 10,
+  },
+  supportChip: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#3D8FB3',
+  },
+  supportChipActive: {
+    backgroundColor: 'rgba(252, 158, 79, 0.16)',
+    borderColor: '#FC9E4F',
+  },
+  supportChipText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#202C59',
+  },
+  supportChipTextActive: {
+    color: '#202C59',
+  },
   button: {
-    ...base.button,
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 6,
     backgroundColor: '#FC9E4F',
   },
-  buttonText: { ...base.buttonText, color: '#202C59' },
-  link: { ...base.link, color: '#202C59' },
+  buttonPressed: {
+    opacity: 0.9,
+  },
+  buttonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#202C59',
+  },
+  link: {
+    textAlign: 'center',
+    marginTop: 18,
+    fontSize: 15,
+    color: '#202C59',
+  },
 });
