@@ -63,3 +63,13 @@ export function getArchiveStorage() {
   }
   return _archive;
 }
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export function getPrimaryStorage() {
+  return AsyncStorage;
+}
+
+export function getArchiveStorage() {
+  return AsyncStorage;
+}
