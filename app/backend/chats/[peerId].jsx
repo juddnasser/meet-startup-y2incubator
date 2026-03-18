@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -9,84 +9,23 @@ import {
   StyleSheet,
   ImageBackground,
 } from 'react-native';
-import { ID, Query } from 'appwrite';
 import Header from '../../header';
-<<<<<<< Updated upstream
 import { useChat } from './useChat';
-=======
-import { useChat } from '../../backend/chats/index';
-import { client, tablesDB } from '../../backend/appwrite';
->>>>>>> Stashed changes
 
-const DATABASE_ID = 'main';
-const TABLE_ID = 'messages';
-
-function createTransport(myId) {
-  return {
-    async send(peerId, message) {
-      await tablesDB.createRow({
-        databaseId: DATABASE_ID,
-        tableId: TABLE_ID,
-        rowId: ID.unique(),
-        data: {
-          sender_id: myId,
-          receiver_id: peerId,
-          sent_id: message.id,
-          content: message.content,
-        },
-      });
-    },
-
-    onMessage(peerId, handler) {
-      const unsubscribe = client.subscribe(
-        `tablesdb.${DATABASE_ID}.tables.${TABLE_ID}.rows`,
-        function (response) {
-          const payload = response && response.payload ? response.payload : null;
-          if (!payload) {
-            return;
-          }
-
-          const isIncoming =
-            payload.sender_id === peerId && payload.receiver_id === myId;
-
-          const isOutgoingEcho =
-            payload.sender_id === myId && payload.receiver_id === peerId;
-
-          if (isIncoming || isOutgoingEcho) {
-            handler(payload);
-          }
-        }
-      );
-
-      return unsubscribe;
-    },
-  };
-}
+const transport = {
+  async send(peerId, message) {
+    console.log('send message', peerId, message);
+    return true;
+  },
+  onMessage(peerId, handler) {
+    return () => {};
+  },
+};
 
 export default function ChatPage() {
   const params = useLocalSearchParams();
-
-  const [chatMeta, setChatMeta] = useState({
-    peerId: 'unknown',
-    peerName: 'Chat',
-    peerTopic: 'Support chat',
-    myId: 'me',
-    myName: '',
-  });
-
-  useEffect(function () {
-    setChatMeta({
-      peerId: typeof params.peerId === 'string' ? params.peerId : 'unknown',
-      peerName: typeof params.name === 'string' ? params.name : 'Chat',
-      peerTopic: typeof params.topic === 'string' ? params.topic : 'Support chat',
-      myId: typeof params.myId === 'string' && params.myId ? params.myId : 'me',
-      myName: typeof params.myName === 'string' ? params.myName : '',
-    });
-  }, [params]);
-
-  const transport = useMemo(function () {
-    return createTransport(chatMeta.myId);
-  }, [chatMeta.myId]);
+  const peerId = typeof params.peerId === 'string' ? params.peerId : 'unknown';
+  const peerName = typeof params.name === 'string' ? params.name : 'Chat';
 
   const [input, setInput] = useState('');
   const mode = 0;
@@ -98,91 +37,11 @@ export default function ChatPage() {
     hasOlderMessages,
     sendMessage,
     loadOlderMessages,
-    syncFromAppwrite,
-  } = useChat(chatMeta.peerId, chatMeta.myId, transport);
-
-  useEffect(
-    function () {
-      let cancelled = false;
-
-      async function hydrateConversation() {
-        if (!chatMeta.peerId || !chatMeta.myId) {
-          return;
-        }
-
-        try {
-          const incomingPromise = tablesDB.listRows({
-            databaseId: DATABASE_ID,
-            tableId: TABLE_ID,
-            queries: [
-              Query.equal('sender_id', [chatMeta.peerId]),
-              Query.equal('receiver_id', [chatMeta.myId]),
-              Query.orderAsc('$createdAt'),
-              Query.limit(500),
-            ],
-          });
-
-          const outgoingPromise = tablesDB.listRows({
-            databaseId: DATABASE_ID,
-            tableId: TABLE_ID,
-            queries: [
-              Query.equal('sender_id', [chatMeta.myId]),
-              Query.equal('receiver_id', [chatMeta.peerId]),
-              Query.orderAsc('$createdAt'),
-              Query.limit(500),
-            ],
-          });
-
-          const results = await Promise.all([incomingPromise, outgoingPromise]);
-
-          if (cancelled) {
-            return;
-          }
-
-          const incomingRows =
-            results[0] && Array.isArray(results[0].rows)
-              ? results[0].rows
-              : results[0] && Array.isArray(results[0].documents)
-              ? results[0].documents
-              : [];
-
-          const outgoingRows =
-            results[1] && Array.isArray(results[1].rows)
-              ? results[1].rows
-              : results[1] && Array.isArray(results[1].documents)
-              ? results[1].documents
-              : [];
-
-          const merged = incomingRows.concat(outgoingRows).sort(function (a, b) {
-            return new Date(a.$createdAt).getTime() - new Date(b.$createdAt).getTime();
-          });
-
-          await syncFromAppwrite(merged);
-        } catch (error) {
-          console.log('chat hydration error', error);
-        }
-      }
-
-      hydrateConversation();
-
-      return function () {
-        cancelled = true;
-      };
-    },
-    [chatMeta.peerId, chatMeta.myId, syncFromAppwrite]
-  );
-
-  const sortedMessages = useMemo(function () {
-    return messages.slice().sort(function (a, b) {
-      return a.dateSent - b.dateSent;
-    });
-  }, [messages]);
+  } = useChat(peerId, 'me', transport);
 
   async function handleSend() {
     const text = input.trim();
-    if (!text) {
-      return;
-    }
+    if (!text) return;
 
     try {
       await sendMessage(text);
@@ -209,7 +68,9 @@ export default function ChatPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: isDark ? 'rgba(35,31,32,0.5)' : 'rgba(255,255,255,0.4)',
+            backgroundColor: isDark
+              ? 'rgba(35,31,32,0.5)'
+              : 'rgba(255,255,255,0.4)',
           }}
         />
 
@@ -241,7 +102,7 @@ export default function ChatPage() {
                   color: isDark ? '#F4FAFF' : '#202C59',
                 }}
               >
-                {chatMeta.peerName}
+                {peerName}
               </Text>
 
               <Text
@@ -251,7 +112,7 @@ export default function ChatPage() {
                   color: isDark ? '#DEFFFE' : '#3D8FB3',
                 }}
               >
-                {chatMeta.peerTopic}
+                Support chat
               </Text>
             </View>
 
@@ -294,7 +155,7 @@ export default function ChatPage() {
                 </Text>
               ) : null}
 
-              {!loading && sortedMessages.length === 0 ? (
+              {!loading && messages.length === 0 ? (
                 <Text
                   style={{
                     textAlign: 'center',
@@ -307,60 +168,56 @@ export default function ChatPage() {
               ) : null}
 
               {!loading &&
-                sortedMessages.map(function (msg) {
-                  return (
-                    <View
-                      key={msg.id}
-                      style={[
-                        styles.bubble,
-                        {
-                          alignSelf:
-                            msg.direction === 'sent' ? 'flex-end' : 'flex-start',
-                          backgroundColor:
-                            msg.direction === 'sent'
-                              ? '#3D8FB3'
-                              : isDark
-                              ? '#231F20'
-                              : '#F4FAFF',
-                          borderColor:
-                            msg.direction === 'sent' ? '#FC9E4F' : '#3D8FB3',
-                        },
-                      ]}
+                messages.map((msg) => (
+                  <View
+                    key={msg.id}
+                    style={[
+                      styles.bubble,
+                      {
+                        alignSelf:
+                          msg.direction === 'sent' ? 'flex-end' : 'flex-start',
+                        backgroundColor:
+                          msg.direction === 'sent'
+                            ? '#3D8FB3'
+                            : isDark
+                            ? '#231F20'
+                            : '#F4FAFF',
+                        borderColor:
+                          msg.direction === 'sent' ? '#FC9E4F' : '#3D8FB3',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        lineHeight: 22,
+                        color: msg.direction === 'sent'
+                          ? '#F4FAFF'
+                          : isDark
+                          ? '#F4FAFF'
+                          : '#202C59',
+                      }}
                     >
+                      {msg.content}
+                    </Text>
+
+                    {msg.edited ? (
                       <Text
                         style={{
-                          fontSize: 16,
-                          lineHeight: 22,
-                          color:
-                            msg.direction === 'sent'
-                              ? '#F4FAFF'
-                              : isDark
-                              ? '#F4FAFF'
-                              : '#202C59',
+                          fontSize: 11,
+                          marginTop: 6,
+                          color: msg.direction === 'sent'
+                            ? '#F4FAFF'
+                            : isDark
+                            ? '#DEFFFE'
+                            : '#202C59',
                         }}
                       >
-                        {msg.content}
+                        edited
                       </Text>
-
-                      {msg.edited ? (
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            marginTop: 6,
-                            color:
-                              msg.direction === 'sent'
-                                ? '#F4FAFF'
-                                : isDark
-                                ? '#DEFFFE'
-                                : '#202C59',
-                          }}
-                        >
-                          edited
-                        </Text>
-                      ) : null}
-                    </View>
-                  );
-                })}
+                    ) : null}
+                  </View>
+                ))}
             </ScrollView>
 
             <View
@@ -369,9 +226,7 @@ export default function ChatPage() {
                 padding: 14,
                 borderTopWidth: 1,
                 borderTopColor: '#3D8FB3',
-                backgroundColor: isDark
-                  ? 'rgba(35,31,32,0.2)'
-                  : 'rgba(244,250,255,0.55)',
+                backgroundColor: isDark ? 'rgba(35,31,32,0.2)' : 'rgba(244,250,255,0.55)',
               }}
             >
               <TextInput
@@ -396,17 +251,15 @@ export default function ChatPage() {
 
               <Pressable
                 onPress={handleSend}
-                style={function ({ pressed }) {
-                  return [
-                    {
-                      borderRadius: 14,
-                      paddingHorizontal: 18,
-                      justifyContent: 'center',
-                      backgroundColor: '#FC9E4F',
-                      opacity: pressed ? 0.92 : 1,
-                    },
-                  ];
-                }}
+                style={({ pressed }) => [
+                  {
+                    borderRadius: 14,
+                    paddingHorizontal: 18,
+                    justifyContent: 'center',
+                    backgroundColor: '#FC9E4F',
+                    opacity: pressed ? 0.92 : 1,
+                  },
+                ]}
               >
                 <Text
                   style={{
@@ -432,15 +285,18 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+
   page: {
     flex: 1,
     paddingTop: 110,
     paddingBottom: 20,
     paddingHorizontal: 20,
   },
+
   messagesArea: {
     padding: 16,
   },
+
   bubble: {
     maxWidth: '78%',
     borderRadius: 18,
